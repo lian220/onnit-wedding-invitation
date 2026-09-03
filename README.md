@@ -3,6 +3,13 @@
 > 강태윤 · 윤채원 · 2027.04.17
 > **가상 데이터입니다.** 이름, 날짜, 장소, 계좌번호 전부 실재하지 않습니다.
 
+| | 주소 |
+|---|---|
+| 청첩장 | **https://lian220.github.io/onnit-wedding-invitation/** |
+| 제작 페이지 | **https://lian220.github.io/onnit-wedding-invitation/make.html** |
+
+로그인 없이 누구나 열립니다.
+
 [ONNIT](https://onnit.co.kr)의 포트폴리오 데모다.
 국내 모바일 청첩장 서비스([살롱드레터](https://salondeletter.com))를 분석한 뒤,
 같은 기능을 따라 만드는 대신 **다르게 풀 수 있는 지점**을 찾아 구현했다.
