@@ -1,233 +1,358 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>청첩장 만들기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
 <style>
 :root{
   color-scheme:light;
-  --bg:#F4F5F3; --panel:#FFFFFF; --ink:#16181D; --ink-2:#4A4E57; --ink-3:#868A93;
-  --line:#E4E2DD; --line-2:#CFCCC5;
-  --jade:#2F5D57; --jade-2:#24483F; --jade-wash:#EAF1EF; --on-jade:#FFFFFF;
-  --warn:#8A5A2B; --warn-wash:#FBF1E4;
+  --bg:#F2F3F1; --card:#FFFFFF; --sunk:#F7F8F6;
+  --ink:#15171C; --ink-2:#575C66; --ink-3:#8B909A; --ink-4:#B4B8C0;
+  --line:#E5E6E2; --line-2:#D2D4CE;
+  --jade:#2F5D57; --jade-p:#26504A; --jade-wash:#E8F0EE; --jade-line:#B9D2CC;
+  --on:#FFFFFF;
+  --danger:#A8453F; --danger-wash:#FBEDEC;
+  --r:12px; --r-s:9px;
+  --tap:48px;
+  --bar:calc(64px + env(safe-area-inset-bottom, 0px));
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);
-  font-family:"Noto Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;
-  font-size:15px;font-weight:300;line-height:1.8;-webkit-font-smoothing:antialiased}
-h1,h2,h3,p,ul,fieldset,legend{margin:0;padding:0}
+  font-family:"Noto Sans KR","Apple SD Gothic Neo",-apple-system,system-ui,sans-serif;
+  font-size:16px;font-weight:400;line-height:1.7;-webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none}
+h1,h2,h3,p,ul,li{margin:0;padding:0}
 ul{list-style:none}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-a{color:var(--jade)}
-:focus-visible{outline:2px solid var(--jade);outline-offset:2px;border-radius:2px}
-.batang{font-family:"Gowun Batang",serif}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input,select,textarea{font:inherit}
+:focus-visible{outline:2px solid var(--jade);outline-offset:2px;border-radius:4px}
 .latin{font-family:"Cormorant Garamond",serif;font-variant-numeric:tabular-nums}
 
-/* ── 상단 바 ── */
-.bar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);
-  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.bar-in{max-width:1240px;margin:0 auto;padding:0 20px;height:60px;
-  display:flex;align-items:center;gap:16px}
-.brand{font-family:"Gowun Batang",serif;font-weight:700;font-size:1.05rem;letter-spacing:-.02em;
-  display:flex;align-items:center;gap:9px}
-.brand i{width:9px;height:9px;border-radius:50%;background:var(--jade);display:block;flex:none}
-.brand small{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:.72rem;
-  letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase}
-.bar .sp{flex:1}
-.btn{border:1px solid var(--line-2);border-radius:3px;padding:9px 15px;font-size:.84rem;
-  transition:border-color .15s,color .15s,background .15s;white-space:nowrap}
-.btn:hover{border-color:var(--jade);color:var(--jade)}
-.btn.primary{background:var(--jade);border-color:var(--jade);color:var(--on-jade);font-weight:500}
-.btn.primary:hover{background:var(--jade-2);color:var(--on-jade)}
+/* 모바일 폭에 맞춘 한 칸. 데스크톱에서도 같은 폭을 유지한다. */
+.app{max-width:480px;margin:0 auto;min-height:100%;background:var(--bg);
+  display:flex;flex-direction:column;
+  box-shadow:0 0 0 1px var(--line)}
 
-/* ── 레이아웃 ── */
-.wrap{max-width:1240px;margin:0 auto;padding:26px 20px 60px;
-  display:grid;grid-template-columns:1fr 430px;gap:28px;align-items:start}
-@media (max-width:1080px){ .wrap{grid-template-columns:1fr} .preview{position:static!important} }
+/* ══════ 헤더 ══════ */
+.hd{position:sticky;top:0;z-index:20;background:var(--card);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.hd-top{height:56px;display:flex;align-items:center;gap:10px;padding:0 16px}
+.hd-top h1{font-family:"Gowun Batang",serif;font-size:1.02rem;font-weight:700;letter-spacing:-.02em}
+.hd-top .dot{width:8px;height:8px;border-radius:50%;background:var(--jade);flex:none}
+.hd-top .sp{flex:1}
+.reset{height:36px;padding:0 12px;border-radius:var(--r-s);font-size:.8rem;
+  color:var(--ink-3);border:1px solid var(--line-2)}
+.reset:active{background:var(--sunk)}
 
-.intro{background:var(--panel);border:1px solid var(--line);border-radius:4px;
-  padding:22px 24px;margin-bottom:20px}
-.intro h1{font-family:"Gowun Batang",serif;font-size:1.3rem;font-weight:700;letter-spacing:-.025em}
-.intro p{margin-top:9px;font-size:.9rem;color:var(--ink-2);line-height:1.85}
-.intro .note{margin-top:14px;padding:12px 14px;background:var(--warn-wash);border-radius:3px;
-  font-size:.82rem;color:var(--warn);line-height:1.8}
+/* 탭 */
+.tabs{display:flex;gap:7px;overflow-x:auto;padding:0 16px 12px;
+  scrollbar-width:none;-ms-overflow-style:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;height:38px;padding:0 15px;border-radius:99px;font-size:.86rem;
+  color:var(--ink-2);background:var(--sunk);border:1px solid transparent;
+  display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+  transition:background .15s,color .15s,border-color .15s}
+.tab .i{font-family:"Cormorant Garamond",serif;font-size:.76rem;font-weight:600;
+  color:var(--ink-4);letter-spacing:.06em}
+.tab[aria-selected="true"]{background:var(--jade);color:var(--on);font-weight:500}
+.tab[aria-selected="true"] .i{color:rgba(255,255,255,.6)}
+.tab:active{transform:scale(.97)}
 
-/* ── 폼 ── */
-.card{background:var(--panel);border:1px solid var(--line);border-radius:4px;margin-bottom:16px}
-.card > h2{display:flex;align-items:center;gap:10px;padding:16px 22px;
-  border-bottom:1px solid var(--line);font-size:.95rem;font-weight:500;letter-spacing:-.01em}
-.card > h2 .n{font-family:"Cormorant Garamond",serif;font-size:.75rem;letter-spacing:.14em;
-  color:var(--jade);font-weight:600}
-.card .body{padding:20px 22px 22px;display:grid;gap:15px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-@media (max-width:620px){ .grid2,.grid3{grid-template-columns:1fr} }
-.f{display:grid;gap:6px;min-width:0}
-.f label{font-size:.78rem;color:var(--ink-3);letter-spacing:.02em}
-.f input,.f select,.f textarea{width:100%;border:1px solid var(--line-2);border-radius:3px;
-  padding:10px 12px;font-family:inherit;font-size:.9rem;font-weight:300;
-  background:var(--panel);color:var(--ink);transition:border-color .15s}
-.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--jade);outline:none}
-.f textarea{resize:vertical;min-height:120px;line-height:1.85}
-.f .help{font-size:.74rem;color:var(--ink-3);line-height:1.7}
+/* ══════ 본문 ══════ */
+.main{flex:1;padding:16px 16px calc(var(--bar) + 22px)}
+.panel{display:none}
+.panel.on{display:block;animation:pin .22s ease both}
+@keyframes pin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-/* 계좌 반복 행 */
-.acct-row{display:grid;grid-template-columns:96px 1fr 1fr 1.2fr 34px;gap:9px;align-items:end}
-@media (max-width:820px){ .acct-row{grid-template-columns:1fr 1fr;gap:10px}
-  .acct-row .del{grid-column:1/-1;justify-self:start} }
-.del{width:34px;height:38px;border:1px solid var(--line-2);border-radius:3px;
-  color:var(--ink-3);display:grid;place-items:center;font-size:1rem;line-height:1}
-.del:hover{border-color:#B3524F;color:#B3524F}
-.addrow{border:1px dashed var(--line-2);border-radius:3px;padding:10px;font-size:.84rem;
-  color:var(--jade);width:100%}
-.addrow:hover{border-color:var(--jade);background:var(--jade-wash)}
+.hint-top{background:var(--jade-wash);border-radius:var(--r);padding:14px 16px;
+  font-size:.83rem;color:var(--jade-p);line-height:1.75;margin-bottom:14px}
+.hint-top b{font-weight:500}
 
-/* ── 미리보기 ── */
-.preview{position:sticky;top:86px;display:grid;gap:12px}
-.phone{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;
-  box-shadow:0 20px 50px -28px rgba(22,24,29,.35)}
-.phone iframe{width:100%;height:min(72vh,760px);border:0;border-radius:8px;display:block;background:#fff}
-.pv-head{display:flex;align-items:center;gap:10px;padding:0 4px 2px}
-.pv-head .t{font-size:.8rem;color:var(--ink-3);letter-spacing:.02em}
-.pv-head .sp{flex:1}
-.pv-head button{font-size:.75rem;color:var(--jade);border-bottom:1px solid transparent}
-.pv-head button:hover{border-color:var(--jade)}
-.link{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px 18px}
-.link h3{font-size:.85rem;font-weight:500;margin-bottom:9px}
-.link .out{font-family:"Cormorant Garamond",serif;font-size:.75rem;color:var(--ink-2);
-  background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:10px 12px;
-  word-break:break-all;line-height:1.65;max-height:96px;overflow:auto}
-.link .acts{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
-.link .acts .btn{flex:1;text-align:center;padding:9px 10px;font-size:.8rem}
-.link .len{margin-top:9px;font-size:.74rem;color:var(--ink-3)}
-.link .len b{font-family:"Cormorant Garamond",serif;color:var(--jade);font-weight:600}
+.grp{background:var(--card);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+.grp > h2{padding:15px 16px 0;font-size:.9rem;font-weight:500;letter-spacing:-.01em;
+  display:flex;align-items:center;gap:8px}
+.grp > h2 .b{width:4px;height:14px;border-radius:2px;background:var(--jade);display:block;flex:none}
+.grp .in{padding:14px 16px 18px;display:grid;gap:14px}
 
-.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);
-  background:var(--ink);color:#fff;font-size:.82rem;padding:11px 20px;border-radius:99px;
-  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;white-space:nowrap}
+.f{display:grid;gap:7px;min-width:0}
+.f > label{font-size:.8rem;color:var(--ink-3);font-weight:400}
+.f .ctl{position:relative;display:block}
+.f input,.f textarea,.f select{
+  width:100%;height:var(--tap);border:1px solid var(--line-2);border-radius:var(--r-s);
+  padding:0 14px;font-size:16px;font-weight:400;background:var(--card);color:var(--ink);
+  transition:border-color .15s,background .15s;appearance:none;-webkit-appearance:none}
+.f textarea{height:auto;min-height:132px;padding:13px 14px;line-height:1.8;resize:none;overflow:hidden}
+.f input::placeholder,.f textarea::placeholder{color:var(--ink-4)}
+.f input:focus,.f textarea:focus,.f select:focus{border-color:var(--jade);outline:none;
+  background:var(--card);box-shadow:0 0 0 3px rgba(47,93,87,.1)}
+.f select{padding-right:40px;background-image:
+  url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%238B909A' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 15px center}
+.f .help{font-size:.76rem;color:var(--ink-3);line-height:1.7}
+.f .help b{color:var(--jade);font-weight:500}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* 세그먼트 (관계 선택) */
+.seg{display:grid;grid-auto-flow:column;gap:0;background:var(--sunk);
+  border-radius:var(--r-s);padding:4px}
+.seg input{position:absolute;opacity:0;width:0;height:0}
+.seg label{height:40px;display:grid;place-items:center;border-radius:7px;
+  font-size:.86rem;color:var(--ink-2);cursor:pointer;transition:all .15s}
+.seg input:checked + label{background:var(--card);color:var(--jade);font-weight:500;
+  box-shadow:0 1px 3px rgba(21,23,28,.1)}
+
+/* 반복 행 */
+.row{background:var(--sunk);border-radius:var(--r-s);padding:13px;display:grid;gap:11px;
+  position:relative}
+.row .rh{display:flex;align-items:center;gap:8px;margin-bottom:-3px}
+.row .rh .n{font-family:"Cormorant Garamond",serif;font-size:.78rem;font-weight:600;
+  color:var(--jade);letter-spacing:.06em}
+.row .rh .sp{flex:1}
+.del{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;
+  color:var(--ink-3);font-size:1.15rem;line-height:1;flex:none}
+.del:active{background:var(--danger-wash);color:var(--danger)}
+.add{width:100%;height:var(--tap);border-radius:var(--r-s);
+  border:1px dashed var(--jade-line);color:var(--jade);font-size:.88rem;font-weight:500;
+  background:var(--jade-wash);display:grid;place-items:center}
+.add:active{background:#DBE9E5}
+
+/* ══════ 하단 고정 바 ══════ */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;
+  max-width:480px;margin:0 auto;
+  background:rgba(255,255,255,.94);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+  display:flex;gap:9px}
+.btn{height:var(--tap);border-radius:var(--r-s);font-size:.92rem;font-weight:500;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  transition:transform .12s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn.ghost{flex:0 0 40%;border:1px solid var(--line-2);color:var(--ink)}
+.btn.ghost:active{background:var(--sunk)}
+.btn.fill{flex:1;background:var(--jade);color:var(--on)}
+.btn.fill:active{background:var(--jade-p)}
+.btn svg{width:17px;height:17px;flex:none}
+
+/* ══════ 미리보기 오버레이 ══════ */
+.pv{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;
+  flex-direction:column}
+.pv.on{display:flex;animation:pvin .24s ease both}
+@keyframes pvin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.pv-hd{height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);
+  background:var(--card);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;padding-left:14px;padding-right:14px;flex:none}
+.pv-hd .t{font-size:.92rem;font-weight:500}
+.pv-hd .sp{flex:1}
+.pv-hd button{height:38px;padding:0 13px;border-radius:var(--r-s);font-size:.84rem;
+  border:1px solid var(--line-2);color:var(--ink-2)}
+.pv-hd button.x{width:38px;padding:0;display:grid;place-items:center;font-size:1.2rem;
+  border-color:transparent;color:var(--ink-2)}
+.pv-hd button:active{background:var(--sunk)}
+.pv-body{flex:1;min-height:0}
+.pv-body iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+
+/* 링크 패널 */
+.linkbox{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.linkbox h3{font-size:.86rem;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.linkbox h3 .b{width:4px;height:14px;border-radius:2px;background:var(--jade);display:block}
+.linkbox .url{background:var(--sunk);border-radius:var(--r-s);padding:12px 13px;
+  font-family:"Cormorant Garamond",serif;font-size:.8rem;color:var(--ink-2);
+  line-height:1.6;word-break:break-all;max-height:88px;overflow:auto}
+.linkbox .meta{margin-top:10px;font-size:.78rem;color:var(--ink-3);display:flex;
+  align-items:center;gap:6px;flex-wrap:wrap}
+.linkbox .meta b{font-family:"Cormorant Garamond",serif;color:var(--jade);font-weight:600}
+.linkbox .meta .warn{color:var(--danger)}
+
+.toast{position:fixed;left:50%;bottom:calc(var(--bar) + 16px);transform:translate(-50%,10px);
+  background:var(--ink);color:#fff;font-size:.85rem;padding:12px 20px;border-radius:99px;
+  opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:80;
+  white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
 .toast.on{opacity:1;transform:translate(-50%,0)}
-@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 
-<header class="bar"><div class="bar-in">
-  <span class="brand"><i></i>청첩장 만들기 <small>Editor</small></span>
-  <span class="sp"></span>
-  <button class="btn" type="button" id="btnReset">처음값으로</button>
-  <button class="btn" type="button" id="btnOpen">새 창에서 열기</button>
-  <button class="btn primary" type="button" id="btnCopy">청첩장 링크 복사</button>
-</div></header>
+<div class="app">
 
-<div class="wrap">
-
-  <!-- ══════ 폼 ══════ -->
-  <div>
-    <div class="intro">
-      <h1>내용을 채우면 오른쪽이 바로 바뀝니다</h1>
-      <p>서버에 저장하지 않습니다. 입력한 내용을 주소에 담아 링크 하나로 만들어 드립니다.
-        그 링크를 받은 사람은 바로 청첩장을 보게 됩니다.</p>
-      <div class="note">데모입니다. 링크에 내용이 그대로 들어가므로 실제 계좌번호나 연락처는 넣지 마세요.
-        실제 서비스로 쓰려면 데이터베이스에 저장하고 짧은 주소를 내주는 편이 맞습니다.</div>
+  <header class="hd">
+    <div class="hd-top">
+      <span class="dot"></span>
+      <h1>청첩장 만들기</h1>
+      <span class="sp"></span>
+      <button class="reset" type="button" id="btnReset">처음값</button>
     </div>
+    <div class="tabs" role="tablist" aria-label="편집 단계">
+      <button class="tab" role="tab" data-tab="p1" aria-selected="true"><span class="i">01</span>인물</button>
+      <button class="tab" role="tab" data-tab="p2" aria-selected="false"><span class="i">02</span>예식</button>
+      <button class="tab" role="tab" data-tab="p3" aria-selected="false"><span class="i">03</span>인사말</button>
+      <button class="tab" role="tab" data-tab="p4" aria-selected="false"><span class="i">04</span>이야기</button>
+      <button class="tab" role="tab" data-tab="p5" aria-selected="false"><span class="i">05</span>계좌</button>
+      <button class="tab" role="tab" data-tab="p6" aria-selected="false"><span class="i">06</span>링크</button>
+    </div>
+  </header>
 
-    <section class="card">
-      <h2><span class="n">01</span>신랑</h2>
-      <div class="body">
-        <div class="grid3">
-          <div class="f"><label for="g_n">이름</label><input id="g_n" data-k="g.n" type="text"></div>
-          <div class="f"><label for="g_f">아버지</label><input id="g_f" data-k="g.f" type="text"></div>
-          <div class="f"><label for="g_m">어머니</label><input id="g_m" data-k="g.m" type="text"></div>
+  <main class="main">
+
+    <!-- ══ 01 인물 ══ -->
+    <section class="panel on" id="p1" role="tabpanel">
+      <div class="grp">
+        <h2><span class="b"></span>신랑</h2>
+        <div class="in">
+          <div class="f"><label for="g_n">이름</label>
+            <input id="g_n" data-k="g.n" type="text" placeholder="강태윤"></div>
+          <div class="two">
+            <div class="f"><label for="g_f">아버지</label><input id="g_f" data-k="g.f" type="text"></div>
+            <div class="f"><label for="g_m">어머니</label><input id="g_m" data-k="g.m" type="text"></div>
+          </div>
+          <div class="f"><label>관계</label>
+            <div class="seg">
+              <span><input type="radio" name="g_o" id="g_o1" value="장남"><label for="g_o1">장남</label></span>
+              <span><input type="radio" name="g_o" id="g_o2" value="차남"><label for="g_o2">차남</label></span>
+              <span><input type="radio" name="g_o" id="g_o3" value="아들"><label for="g_o3">아들</label></span>
+            </div>
+          </div>
+          <div class="two">
+            <div class="f"><label for="g_t">연락처</label>
+              <input id="g_t" data-k="g.t" type="tel" inputmode="numeric" placeholder="01012345678"></div>
+            <div class="f"><label for="g_r">영문 이름</label>
+              <input id="g_r" data-k="g.r" type="text" placeholder="Taeyun"></div>
+          </div>
         </div>
-        <div class="grid3">
-          <div class="f"><label for="g_o">관계</label>
-            <select id="g_o" data-k="g.o"><option>장남</option><option>차남</option><option>삼남</option><option>아들</option></select></div>
-          <div class="f"><label for="g_t">연락처</label><input id="g_t" data-k="g.t" type="tel" placeholder="01012345678"></div>
-          <div class="f"><label for="g_r">영문 이름</label><input id="g_r" data-k="g.r" type="text" placeholder="Taeyun"></div>
+      </div>
+
+      <div class="grp">
+        <h2><span class="b"></span>신부</h2>
+        <div class="in">
+          <div class="f"><label for="b_n">이름</label>
+            <input id="b_n" data-k="b.n" type="text" placeholder="윤채원"></div>
+          <div class="two">
+            <div class="f"><label for="b_f">아버지</label><input id="b_f" data-k="b.f" type="text"></div>
+            <div class="f"><label for="b_m">어머니</label><input id="b_m" data-k="b.m" type="text"></div>
+          </div>
+          <div class="f"><label>관계</label>
+            <div class="seg">
+              <span><input type="radio" name="b_o" id="b_o1" value="장녀"><label for="b_o1">장녀</label></span>
+              <span><input type="radio" name="b_o" id="b_o2" value="차녀"><label for="b_o2">차녀</label></span>
+              <span><input type="radio" name="b_o" id="b_o3" value="딸"><label for="b_o3">딸</label></span>
+            </div>
+          </div>
+          <div class="two">
+            <div class="f"><label for="b_t">연락처</label>
+              <input id="b_t" data-k="b.t" type="tel" inputmode="numeric" placeholder="01098765432"></div>
+            <div class="f"><label for="b_r">영문 이름</label>
+              <input id="b_r" data-k="b.r" type="text" placeholder="Chaewon"></div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="card">
-      <h2><span class="n">02</span>신부</h2>
-      <div class="body">
-        <div class="grid3">
-          <div class="f"><label for="b_n">이름</label><input id="b_n" data-k="b.n" type="text"></div>
-          <div class="f"><label for="b_f">아버지</label><input id="b_f" data-k="b.f" type="text"></div>
-          <div class="f"><label for="b_m">어머니</label><input id="b_m" data-k="b.m" type="text"></div>
-        </div>
-        <div class="grid3">
-          <div class="f"><label for="b_o">관계</label>
-            <select id="b_o" data-k="b.o"><option>장녀</option><option>차녀</option><option>삼녀</option><option>딸</option></select></div>
-          <div class="f"><label for="b_t">연락처</label><input id="b_t" data-k="b.t" type="tel" placeholder="01098765432"></div>
-          <div class="f"><label for="b_r">영문 이름</label><input id="b_r" data-k="b.r" type="text" placeholder="Chaewon"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2><span class="n">03</span>예식</h2>
-      <div class="body">
-        <div class="grid2">
-          <div class="f"><label for="d_d">예식 일시</label><input id="d_d" data-k="d" type="datetime-local">
+    <!-- ══ 02 예식 ══ -->
+    <section class="panel" id="p2" role="tabpanel">
+      <div class="grp">
+        <h2><span class="b"></span>날짜</h2>
+        <div class="in">
+          <div class="f"><label for="d_d">예식 일시</label>
+            <input id="d_d" data-k="d" type="datetime-local">
             <span class="help">달력과 카운트다운이 이 날짜로 다시 그려집니다.</span></div>
-          <div class="f"><label for="d_met">처음 만난 날</label><input id="d_met" data-k="met" type="date">
+          <div class="f"><label for="d_met">처음 만난 날</label>
+            <input id="d_met" data-k="met" type="date">
             <span class="help">함께한 날 수를 세는 데 씁니다.</span></div>
         </div>
       </div>
-    </section>
-
-    <section class="card">
-      <h2><span class="n">04</span>예식장</h2>
-      <div class="body">
-        <div class="grid2">
-          <div class="f"><label for="v_n">예식장 이름</label><input id="v_n" data-k="v.n" type="text">
+      <div class="grp">
+        <h2><span class="b"></span>예식장</h2>
+        <div class="in">
+          <div class="f"><label for="v_n">이름</label>
+            <input id="v_n" data-k="v.n" type="text" placeholder="라온 컨벤션">
             <span class="help">지도 앱 검색어로도 쓰입니다.</span></div>
-          <div class="f"><label for="v_h">홀</label><input id="v_h" data-k="v.h" type="text" placeholder="5층 그랜드홀"></div>
+          <div class="f"><label for="v_h">홀</label>
+            <input id="v_h" data-k="v.h" type="text" placeholder="5층 그랜드홀"></div>
+          <div class="f"><label for="v_a">주소</label>
+            <input id="v_a" data-k="v.a" type="text" placeholder="서울 강남구 테헤란로 152"></div>
         </div>
-        <div class="f"><label for="v_a">주소</label><input id="v_a" data-k="v.a" type="text"></div>
       </div>
     </section>
 
-    <section class="card">
-      <h2><span class="n">05</span>인사말</h2>
-      <div class="body">
-        <div class="f"><label for="greet">본문</label>
-          <textarea id="greet" placeholder="한 줄 띄우면 문단이 나뉩니다."></textarea>
-          <span class="help">빈 줄로 문단을 나눕니다. <b>*별표*</b>로 감싸면 그 부분이 진하게 강조됩니다.</span></div>
+    <!-- ══ 03 인사말 ══ -->
+    <section class="panel" id="p3" role="tabpanel">
+      <div class="hint-top">빈 줄로 문단을 나눕니다. <b>*별표*</b>로 감싸면 그 부분이 진하게 강조됩니다.</div>
+      <div class="grp">
+        <h2><span class="b"></span>초대 글</h2>
+        <div class="in">
+          <div class="f"><textarea id="greet" aria-label="인사말" placeholder="두 분의 마음을 담아 적어 주세요."></textarea></div>
+        </div>
       </div>
     </section>
 
-    <section class="card">
-      <h2><span class="n">06</span>마음 전하실 곳</h2>
-      <div class="body">
-        <div id="acctRows" style="display:grid;gap:12px"></div>
-        <button class="addrow" type="button" id="acctAdd">＋ 계좌 추가</button>
+    <!-- ══ 04 이야기 ══ -->
+    <section class="panel" id="p4" role="tabpanel">
+      <div class="hint-top">마지막 항목이 예식으로 간주되어 강조됩니다. 전부 지우면 이 섹션이 사라집니다.</div>
+      <div class="grp">
+        <h2><span class="b"></span>우리의 시간</h2>
+        <div class="in">
+          <div id="tlRows" style="display:grid;gap:11px"></div>
+          <button class="add" type="button" id="tlAdd">＋ 항목 추가</button>
+        </div>
       </div>
     </section>
+
+    <!-- ══ 05 계좌 ══ -->
+    <section class="panel" id="p5" role="tabpanel">
+      <div class="hint-top">데모입니다. 링크에 내용이 그대로 담기니 <b>실제 계좌번호는 넣지 마세요.</b></div>
+      <div class="grp">
+        <h2><span class="b"></span>마음 전하실 곳</h2>
+        <div class="in">
+          <div id="acctRows" style="display:grid;gap:11px"></div>
+          <button class="add" type="button" id="acctAdd">＋ 계좌 추가</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 06 링크 ══ -->
+    <section class="panel" id="p6" role="tabpanel">
+      <div class="hint-top">서버에 저장하지 않습니다. 입력한 내용이 주소 안에 담기므로,
+        이 링크를 받은 사람은 바로 청첩장을 보게 됩니다.</div>
+      <div class="linkbox">
+        <h3><span class="b"></span>청첩장 링크</h3>
+        <div class="url latin" id="linkOut">주소를 만드는 중…</div>
+        <div class="meta">주소 길이 <b id="linkLen">0</b>자<span id="linkWarn"></span></div>
+      </div>
+      <div class="grp">
+        <div class="in">
+          <button class="btn fill" type="button" id="btnCopy2" style="width:100%">링크 복사하기</button>
+          <button class="btn ghost" type="button" id="btnOpen2" style="width:100%;flex:none">새 창에서 열기</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══ 하단 고정 바 ══ -->
+<div class="bar">
+  <button class="btn ghost" type="button" id="btnPv">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+    미리보기
+  </button>
+  <button class="btn fill" type="button" id="btnCopy">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    청첩장 링크 복사
+  </button>
+</div>
+
+<!-- ══ 미리보기 ══ -->
+<div class="pv" id="pv" role="dialog" aria-modal="true" aria-label="청첩장 미리보기">
+  <div class="pv-hd">
+    <span class="t">미리보기</span>
+    <span class="sp"></span>
+    <button type="button" id="pvReload">새로고침</button>
+    <button type="button" class="x" id="pvClose" aria-label="닫기">&times;</button>
   </div>
-
-  <!-- ══════ 미리보기 ══════ -->
-  <aside class="preview">
-    <div class="pv-head">
-      <span class="t">미리보기</span>
-      <span class="sp"></span>
-      <button type="button" id="pvReload">새로고침</button>
-    </div>
-    <div class="phone"><iframe id="pv" title="청첩장 미리보기" src="index.html"></iframe></div>
-    <div class="link">
-      <h3>청첩장 링크</h3>
-      <div class="out latin" id="linkOut">주소를 만드는 중…</div>
-      <div class="len">주소 길이 <b id="linkLen">0</b>자<span id="linkWarn"></span></div>
-      <div class="acts">
-        <button class="btn primary" type="button" id="btnCopy2">링크 복사</button>
-        <button class="btn" type="button" id="btnOpen2">새 창에서 열기</button>
-      </div>
-    </div>
-  </aside>
+  <div class="pv-body"><iframe id="pvFrame" title="청첩장 미리보기"></iframe></div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
 <script>
 (function(){
   'use strict';
@@ -238,6 +363,16 @@ a{color:var(--jade)}
     d: '2027-04-17T13:00',
     met: '2019-05-20',
     v: { n:'라온 컨벤션', h:'5층 그랜드홀', a:'서울 강남구 테헤란로 152' },
+    tl: [
+      { t:'2019 . 05', h:'처음 만난 날',
+        b:'친구의 결혼식 피로연에서 옆자리에 앉았습니다. 그날 나눈 이야기가 여기까지 왔습니다.' },
+      { t:'2021 . 09', h:'같이 키우기 시작한 것들',
+        b:'화분 하나로 시작해 지금은 베란다가 좁습니다. 고양이 한 마리도 늘었습니다.' },
+      { t:'2024 . 11', h:'같은 동네로',
+        b:'각자의 짐을 합치는 데 사흘이 걸렸습니다. 버릴 것보다 남길 것이 많았습니다.' },
+      { t:'2027 . 04 . 17', h:'결혼합니다',
+        b:'여덟 번째 봄에, 같은 이름으로 불리기로 했습니다.' }
+    ],
     greet: [
       '서로에게 익숙해지는 데\n여덟 번의 봄이 걸렸습니다.',
       '이제는 같은 곳을 보며 걷기로,\n같은 이름으로 불리기로 했습니다.',
@@ -256,79 +391,138 @@ a{color:var(--jade)}
   var D  = JSON.parse(JSON.stringify(DEFAULTS));
 
   /* ── 토스트 ── */
-  var tEl = $('#toast'), tTimer;
+  var tEl = $('#toast'), tT;
   function toast(m){
     tEl.textContent = m; tEl.classList.add('on');
-    clearTimeout(tTimer);
-    tTimer = setTimeout(function(){ tEl.classList.remove('on'); }, 1800);
+    clearTimeout(tT); tT = setTimeout(function(){ tEl.classList.remove('on'); }, 1900);
   }
+
+  /* ── 탭 ── */
+  $$('.tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      $$('.tab').forEach(function(t){ t.setAttribute('aria-selected','false'); });
+      $$('.panel').forEach(function(p){ p.classList.remove('on'); });
+      tab.setAttribute('aria-selected','true');
+      var panel = document.getElementById(tab.getAttribute('data-tab'));
+      if (panel) {
+        panel.classList.add('on');
+        // 숨어 있던 동안에는 높이를 잴 수 없다. 보이고 나서 다시 잰다.
+        panel.querySelectorAll('textarea').forEach(grow);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      tab.scrollIntoView({ inline:'center', block:'nearest', behavior:'smooth' });
+    });
+  });
 
   /* ── 경로 접근 ── */
-  function get(obj, path){
-    return path.split('.').reduce(function(o, k){ return o == null ? o : o[k]; }, obj);
-  }
-  function set(obj, path, val){
-    var ps = path.split('.'), last = ps.pop();
-    var cur = ps.reduce(function(o, k){ if (!o[k]) o[k] = {}; return o[k]; }, obj);
-    cur[last] = val;
+  function get(o, p){ return p.split('.').reduce(function(a,k){ return a==null?a:a[k]; }, o); }
+  function set(o, p, v){
+    var ps = p.split('.'), last = ps.pop();
+    ps.reduce(function(a,k){ if(!a[k]) a[k]={}; return a[k]; }, o)[last] = v;
   }
 
-  /* ── 인코딩: JSON → base64url ── */
+  /* ── JSON → base64url ── */
   function encode(o){
-    var json = JSON.stringify(o);
-    var bytes = new TextEncoder().encode(json);
+    var bytes = new TextEncoder().encode(JSON.stringify(o));
     var bin = '';
     for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   }
-  function invitationUrl(){
-    var base = location.href.replace(/\/[^\/]*$/, '/') + 'index.html';
-    return base + '#d=' + encode(D);
+  function url(){
+    return location.href.replace(/[?#].*$/,'').replace(/\/[^\/]*$/,'/') + 'index.html#d=' + encode(D);
   }
 
-  /* ── 계좌 행 ── */
-  function acctRow(a, i){
-    var wrap = document.createElement('div');
-    wrap.className = 'acct-row';
-    wrap.innerHTML =
-      '<div class="f"><label>구분</label><select data-a="s">' +
-        '<option>신랑측</option><option>신부측</option></select></div>' +
+  /* ── 타임라인 ── */
+  function tlRow(x, i){
+    var w = document.createElement('div');
+    w.className = 'row';
+    w.innerHTML =
+      '<div class="rh"><span class="n">' + (i+1 < 10 ? '0'+(i+1) : i+1) + '</span><span class="sp"></span>' +
+        '<button class="del" type="button" aria-label="이 항목 삭제">&times;</button></div>' +
+      '<div class="two">' +
+        '<div class="f"><label>시점</label><input data-t="t" type="text" placeholder="2019 . 05"></div>' +
+        '<div class="f"><label>제목</label><input data-t="h" type="text" placeholder="처음 만난 날"></div>' +
+      '</div>' +
+      '<div class="f"><label>설명</label><textarea data-t="b" style="min-height:76px" placeholder="그날의 이야기를 적어 주세요."></textarea></div>';
+    w.querySelector('[data-t="t"]').value = x.t || '';
+    w.querySelector('[data-t="h"]').value = x.h || '';
+    w.querySelector('[data-t="b"]').value = x.b || '';
+    w.querySelectorAll('input,textarea').forEach(function(el){
+      el.addEventListener('input', collectTl);
+    });
+    w.querySelector('.del').addEventListener('click', function(){
+      D.tl.splice(i,1); renderTl(); schedule();
+    });
+    return w;
+  }
+  function renderTl(){
+    var box = $('#tlRows'); box.innerHTML = '';
+    (D.tl || []).forEach(function(x,i){ box.appendChild(tlRow(x,i)); });
+  }
+  function collectTl(){
+    D.tl = $$('#tlRows .row').map(function(r){
+      return {
+        t: r.querySelector('[data-t="t"]').value.trim(),
+        h: r.querySelector('[data-t="h"]').value.trim(),
+        b: r.querySelector('[data-t="b"]').value.trim()
+      };
+    });
+    schedule();
+  }
+  $('#tlAdd').addEventListener('click', function(){
+    if (!D.tl) D.tl = [];
+    D.tl.push({ t:'', h:'', b:'' }); renderTl(); schedule();
+    var rows = $$('#tlRows .row');
+    if (rows.length) rows[rows.length-1].scrollIntoView({ block:'center', behavior:'smooth' });
+  });
+
+  /* ── 계좌 ── */
+  function accRow(a, i){
+    var w = document.createElement('div');
+    w.className = 'row';
+    w.innerHTML =
+      '<div class="rh"><span class="n">' + (i+1 < 10 ? '0'+(i+1) : i+1) + '</span><span class="sp"></span>' +
+        '<button class="del" type="button" aria-label="이 계좌 삭제">&times;</button></div>' +
+      '<div class="two">' +
+        '<div class="f"><label>구분</label><select data-a="s">' +
+          '<option>신랑측</option><option>신부측</option></select></div>' +
+        '<div class="f"><label>은행</label><input data-a="bank" type="text" placeholder="국민"></div>' +
+      '</div>' +
       '<div class="f"><label>예금주 표기</label><input data-a="who" type="text" placeholder="신랑 강태윤"></div>' +
-      '<div class="f"><label>은행</label><input data-a="bank" type="text" placeholder="국민"></div>' +
-      '<div class="f"><label>계좌번호</label><input data-a="no" type="text" placeholder="123456-01-234567"></div>' +
-      '<button class="del" type="button" title="이 줄 삭제" aria-label="이 줄 삭제">×</button>';
-    wrap.querySelector('[data-a="s"]').value    = a.s || '신랑측';
-    wrap.querySelector('[data-a="who"]').value  = a.who || '';
-    wrap.querySelector('[data-a="bank"]').value = a.bank || '';
-    wrap.querySelector('[data-a="no"]').value   = a.no || '';
-    wrap.querySelectorAll('input,select').forEach(function(el){
+      '<div class="f"><label>계좌번호</label><input data-a="no" type="text" inputmode="numeric" placeholder="123456-01-234567"></div>';
+    w.querySelector('[data-a="s"]').value    = a.s || '신랑측';
+    w.querySelector('[data-a="bank"]').value = a.bank || '';
+    w.querySelector('[data-a="who"]').value  = a.who || '';
+    w.querySelector('[data-a="no"]').value   = a.no || '';
+    w.querySelectorAll('input,select').forEach(function(el){
       el.addEventListener('input', collectAcc);
       el.addEventListener('change', collectAcc);
     });
-    wrap.querySelector('.del').addEventListener('click', function(){
-      D.acc.splice(i, 1); renderAcc(); schedule();
+    w.querySelector('.del').addEventListener('click', function(){
+      D.acc.splice(i,1); renderAcc(); schedule();
     });
-    return wrap;
+    return w;
   }
   function renderAcc(){
-    var box = $('#acctRows');
-    box.innerHTML = '';
-    D.acc.forEach(function(a, i){ box.appendChild(acctRow(a, i)); });
+    var box = $('#acctRows'); box.innerHTML = '';
+    (D.acc || []).forEach(function(a,i){ box.appendChild(accRow(a,i)); });
   }
   function collectAcc(){
-    D.acc = $$('#acctRows .acct-row').map(function(row){
+    D.acc = $$('#acctRows .row').map(function(r){
       return {
-        s:    row.querySelector('[data-a="s"]').value,
-        who:  row.querySelector('[data-a="who"]').value.trim(),
-        bank: row.querySelector('[data-a="bank"]').value.trim(),
-        no:   row.querySelector('[data-a="no"]').value.trim()
+        s:    r.querySelector('[data-a="s"]').value,
+        bank: r.querySelector('[data-a="bank"]').value.trim(),
+        who:  r.querySelector('[data-a="who"]').value.trim(),
+        no:   r.querySelector('[data-a="no"]').value.trim()
       };
     });
     schedule();
   }
   $('#acctAdd').addEventListener('click', function(){
-    D.acc.push({ s:'신랑측', who:'', bank:'', no:'' });
-    renderAcc(); schedule();
+    if (!D.acc) D.acc = [];
+    D.acc.push({ s:'신랑측', who:'', bank:'', no:'' }); renderAcc(); schedule();
+    var rows = $$('#acctRows .row');
+    if (rows.length) rows[rows.length-1].scrollIntoView({ block:'center', behavior:'smooth' });
   });
 
   /* ── 폼 ↔ 데이터 ── */
@@ -337,61 +531,109 @@ a{color:var(--jade)}
       var v = get(D, el.getAttribute('data-k'));
       el.value = v == null ? '' : v;
     });
+    setSeg('g_o', D.g.o);
+    setSeg('b_o', D.b.o);
     $('#greet').value = (D.greet || []).join('\n\n');
-    renderAcc();
+    renderTl(); renderAcc();
+  }
+  function setSeg(name, val){
+    var found = false;
+    $$('input[name="' + name + '"]').forEach(function(r){
+      r.checked = (r.value === val);
+      if (r.checked) found = true;
+    });
+    if (!found) {
+      var first = $('input[name="' + name + '"]');
+      if (first) first.checked = true;
+    }
   }
   $$('[data-k]').forEach(function(el){
-    el.addEventListener('input', function(){
-      set(D, el.getAttribute('data-k'), el.value);
-      schedule();
+    ['input','change'].forEach(function(ev){
+      el.addEventListener(ev, function(){
+        set(D, el.getAttribute('data-k'), el.value);
+        schedule();
+      });
     });
-    el.addEventListener('change', function(){
-      set(D, el.getAttribute('data-k'), el.value);
-      schedule();
+  });
+  ['g_o','b_o'].forEach(function(name){
+    $$('input[name="' + name + '"]').forEach(function(r){
+      r.addEventListener('change', function(){
+        set(D, name === 'g_o' ? 'g.o' : 'b.o', r.value);
+        schedule();
+      });
     });
   });
   $('#greet').addEventListener('input', function(){
-    D.greet = $('#greet').value.split(/\n\s*\n/).map(function(t){ return t.trim(); })
-                .filter(function(t){ return t; });
+    D.greet = $('#greet').value.split(/\n\s*\n/)
+      .map(function(t){ return t.trim(); }).filter(Boolean);
     schedule();
   });
 
-  /* ── 미리보기 갱신 (입력 중엔 잠깐 기다린다) ── */
+  /* ── 링크 갱신 ── */
   var timer;
-  function schedule(){ clearTimeout(timer); timer = setTimeout(apply, 350); }
+  function schedule(){ clearTimeout(timer); timer = setTimeout(apply, 320); }
   function apply(){
-    var url = invitationUrl();
-    var out = $('#linkOut');
-    out.textContent = url;
-    var n = url.length;
+    var u = url();
+    $('#linkOut').textContent = u;
+    var n = u.length;
     $('#linkLen').textContent = n.toLocaleString('ko-KR');
-    $('#linkWarn').textContent = n > 2000
-      ? ' · 일부 메신저에서 잘릴 수 있는 길이입니다'
-      : '';
-    $('#pv').src = url;
+    $('#linkWarn').innerHTML = n > 2000
+      ? ' <span class="warn">· 일부 메신저에서 잘릴 수 있습니다</span>' : '';
+    if ($('#pv').classList.contains('on')) $('#pvFrame').src = u + '&nogate=1';
   }
 
-  /* ── 버튼 ── */
+  /* ── 미리보기 ── */
+  function openPv(){
+    $('#pvFrame').src = url() + '&nogate=1';
+    $('#pv').classList.add('on');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePv(){
+    $('#pv').classList.remove('on');
+    document.body.style.overflow = '';
+  }
+  $('#btnPv').addEventListener('click', openPv);
+  $('#pvClose').addEventListener('click', closePv);
+  $('#pvReload').addEventListener('click', function(){
+    $('#pvFrame').src = url() + '&nogate=1'; toast('미리보기를 새로 불렀습니다');
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && $('#pv').classList.contains('on')) closePv();
+  });
+
+  /* ── 복사 · 열기 ── */
   function copyUrl(){
-    var url = invitationUrl();
+    var u = url();
     function ok(){ toast('청첩장 링크를 복사했습니다'); }
-    function no(){ toast('복사가 막혀 있습니다. 링크를 직접 선택해 주세요'); }
+    function no(){ toast('복사가 막혔습니다. 링크 탭에서 직접 선택해 주세요'); }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(ok, no);
+      navigator.clipboard.writeText(u).then(ok, no);
     } else { no(); }
   }
   $('#btnCopy').addEventListener('click', copyUrl);
   $('#btnCopy2').addEventListener('click', copyUrl);
-  function openNew(){ window.open(invitationUrl(), '_blank', 'noopener'); }
-  $('#btnOpen').addEventListener('click', openNew);
+  function openNew(){ window.open(url(), '_blank', 'noopener'); }
   $('#btnOpen2').addEventListener('click', openNew);
-  $('#pvReload').addEventListener('click', function(){ apply(); toast('미리보기를 새로 불렀습니다'); });
   $('#btnReset').addEventListener('click', function(){
     D = JSON.parse(JSON.stringify(DEFAULTS));
     fillForm(); apply(); toast('처음값으로 되돌렸습니다');
   });
 
+  /* ── 텍스트영역은 내용에 맞춰 늘어난다 ── */
+  function grow(el){
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.max(el.scrollHeight, 64) + 'px';
+  }
+  function growAll(){ $$('textarea').forEach(grow); }
+  document.addEventListener('input', function(e){
+    if (e.target && e.target.tagName === 'TEXTAREA') grow(e.target);
+  });
+  var _renderTl = renderTl;
+  renderTl = function(){ _renderTl(); growAll(); };
+
   fillForm();
+  growAll();
   apply();
 })();
 </script>

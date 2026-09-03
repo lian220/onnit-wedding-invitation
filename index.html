@@ -284,6 +284,38 @@ img{display:block;max-width:100%}
 .qr .cap{font-size:.74rem;color:var(--ink-3);letter-spacing:.04em}
 
 
+/* ════════ 꽃잎 ════════
+   커버에만 깔린다. 화면 밖으로 나가면 멈춘다. */
+#petals{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.cover > *:not(#petals){position:relative;z-index:1}
+
+/* ════════ 첫 진입 참석 안내 ════════ */
+.gate{position:fixed;inset:0;z-index:70;display:none;
+  align-items:center;justify-content:center;padding:22px;
+  background:rgba(22,24,29,.42);backdrop-filter:blur(3px)}
+.gate.on{display:flex;animation:gfade .3s ease both}
+@keyframes gfade{from{opacity:0}to{opacity:1}}
+.gate-box{background:var(--paper);border-radius:5px;width:100%;max-width:340px;
+  padding:32px 26px 22px;text-align:center;position:relative;
+  box-shadow:0 30px 70px -30px rgba(22,24,29,.5);animation:grise .4s cubic-bezier(.2,.7,.3,1) both}
+@keyframes grise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.gate-x{position:absolute;top:10px;right:12px;width:30px;height:30px;
+  color:var(--ink-3);font-size:1.1rem;line-height:1}
+.gate-x:hover{color:var(--ink)}
+.gate .label{margin-bottom:10px}
+.gate h3{font-family:"Gowun Batang",serif;font-size:1.14rem;font-weight:700;letter-spacing:-.02em}
+.gate .lead{margin-top:11px;font-size:.86rem;color:var(--ink-2);line-height:1.85}
+.gate .card2{margin-top:20px;background:var(--jade-wash);border-radius:3px;padding:18px 16px}
+.gate .card2 .who2{font-family:"Gowun Batang",serif;font-size:1rem;font-weight:700;color:var(--jade-2)}
+.gate .card2 .who2 i{font-style:normal;color:var(--jade);margin:0 7px}
+.gate .card2 .when2{margin-top:9px;font-size:.83rem;color:var(--jade-2);line-height:1.8;opacity:.92}
+.gate .go{margin-top:18px;width:100%;background:var(--jade);color:var(--on-jade);
+  border-radius:2px;padding:13px;font-size:.9rem;font-weight:500;letter-spacing:.02em}
+.gate .go:hover{background:var(--jade-2)}
+.gate .skip{margin-top:14px;font-size:.78rem;color:var(--ink-3);
+  border-bottom:1px solid transparent;padding-bottom:2px}
+.gate .skip:hover{color:var(--ink-2);border-color:var(--line-2)}
+
 /* ════════ 사진 밴드 ════════
    전면 사진과 단색 면을 번갈아 두어 리듬을 만든다.
    사진은 파일에 직접 박아 두었다 (외부 요청 없음). */
@@ -348,6 +380,7 @@ img{display:block;max-width:100%}
 
 <!-- ══════ 커버 ══════ -->
 <header class="cover">
+  <canvas id="petals" aria-hidden="true"></canvas>
   <div class="to" id="toSlot"></div>
   <span class="cover-eyebrow">We are getting married</span>
 
@@ -450,28 +483,7 @@ img{display:block;max-width:100%}
   <span class="label">Our Story</span>
   <h2 class="stitle">우리의 시간</h2>
 
-  <ol class="tl">
-    <li>
-      <div class="t latin">2019 . 05</div>
-      <div class="h">처음 만난 날</div>
-      <div class="b">친구의 결혼식 피로연에서 옆자리에 앉았습니다. 그날 나눈 이야기가 여기까지 왔습니다.</div>
-    </li>
-    <li>
-      <div class="t latin">2021 . 09</div>
-      <div class="h">같이 키우기 시작한 것들</div>
-      <div class="b">화분 하나로 시작해 지금은 베란다가 좁습니다. 고양이 한 마리도 늘었습니다.</div>
-    </li>
-    <li>
-      <div class="t latin">2024 . 11</div>
-      <div class="h">같은 동네로</div>
-      <div class="b">각자의 짐을 합치는 데 사흘이 걸렸습니다. 버릴 것보다 남길 것이 많았습니다.</div>
-    </li>
-    <li class="hi">
-      <div class="t latin">2027 . 04 . 17</div>
-      <div class="h">결혼합니다</div>
-      <div class="b">여덟 번째 봄에, 같은 이름으로 불리기로 했습니다.</div>
-    </li>
-  </ol>
+  <ol class="tl" id="tlBox"></ol>
 
   <div class="together">
     <div class="k">처음 만난 날부터 예식까지</div>
@@ -643,6 +655,21 @@ img{display:block;max-width:100%}
   </button>
 </div>
 
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateH">
+  <div class="gate-box">
+    <button class="gate-x" type="button" id="gateX" aria-label="닫기">&times;</button>
+    <span class="label">R S V P</span>
+    <h3 id="gateH">참석 여부를 알려 주세요</h3>
+    <p class="lead">소중한 분들을 부족함 없이 모실 수 있도록<br>미리 여쭙습니다.</p>
+    <div class="card2">
+      <div class="who2"><span data-f="g.n">강태윤</span><i>♥</i><span data-f="b.n">윤채원</span></div>
+      <div class="when2"><span data-f="_dateFull">2027년 4월 17일 토요일 오후 1시</span><br><span data-f="_place">라온 컨벤션 5층 그랜드홀</span></div>
+    </div>
+    <button class="go" type="button" id="gateGo">참석 여부 알리기</button>
+    <button class="skip" type="button" id="gateSkip">오늘 하루 보지 않기</button>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script>
@@ -660,6 +687,16 @@ img{display:block;max-width:100%}
     d: '2027-04-17T13:00',
     met: '2019-05-20',
     v: { n:'라온 컨벤션', h:'5층 그랜드홀', a:'서울 강남구 테헤란로 152' },
+    tl: [
+      { t:'2019 . 05', h:'처음 만난 날',
+        b:'친구의 결혼식 피로연에서 옆자리에 앉았습니다. 그날 나눈 이야기가 여기까지 왔습니다.' },
+      { t:'2021 . 09', h:'같이 키우기 시작한 것들',
+        b:'화분 하나로 시작해 지금은 베란다가 좁습니다. 고양이 한 마리도 늘었습니다.' },
+      { t:'2024 . 11', h:'같은 동네로',
+        b:'각자의 짐을 합치는 데 사흘이 걸렸습니다. 버릴 것보다 남길 것이 많았습니다.' },
+      { t:'2027 . 04 . 17', h:'결혼합니다',
+        b:'여덟 번째 봄에, 같은 이름으로 불리기로 했습니다.' }
+    ],
     greet: [
       '서로에게 익숙해지는 데\n여덟 번의 봄이 걸렸습니다.',
       '이제는 같은 곳을 보며 걷기로,\n같은 이름으로 불리기로 했습니다.',
@@ -812,6 +849,8 @@ img{display:block;max-width:100%}
     '_dateKo':   WD_KO[WEDDING.getDay()] + '요일 ' + ampm(WEDDING),
     '_place':    place,
     '_placeTime': place + ' · ' + ampm(WEDDING),
+    '_dateFull': WEDDING.getFullYear() + '년 ' + (WEDDING.getMonth()+1) + '월 ' +
+                 WEDDING.getDate() + '일 ' + WD_KO[WEDDING.getDay()] + '요일 ' + ampm(WEDDING),
     '_gGiven':   given(D.g.n),
     '_bGiven':   given(D.b.n),
     '_gMeta':    D.g.f + ' · ' + D.g.m + ' 의 ' + D.g.o,
@@ -911,6 +950,21 @@ img{display:block;max-width:100%}
       return '<div class="acct-g"><button type="button"><span>' + esc(k) +
         ' 계좌번호</span><span class="caret">▾</span></button>' +
         '<div class="acct-list">' + rows + '</div></div>';
+    }).join('');
+  })();
+
+  /* 타임라인 — 마지막 항목이 예식이므로 강조한다 */
+  (function timeline(){
+    var box = document.getElementById('tlBox');
+    if (!box || !Array.isArray(D.tl)) return;
+    var items = D.tl.filter(function(x){ return x && (x.h || x.b); });
+    if (!items.length) { box.closest('.sec').style.display = 'none'; return; }
+    box.innerHTML = items.map(function(x, i){
+      return '<li' + (i === items.length - 1 ? ' class="hi"' : '') + '>' +
+        (x.t ? '<div class="t latin">' + esc(x.t) + '</div>' : '') +
+        (x.h ? '<div class="h">' + esc(x.h) + '</div>' : '') +
+        (x.b ? '<div class="b">' + esc(x.b).replace(/\n/g, '<br>') + '</div>' : '') +
+      '</li>';
     }).join('');
   })();
 
@@ -1101,6 +1155,149 @@ img{display:block;max-width:100%}
     toast(ok ? '축하를 남겼습니다' : '저장이 막혀 이번만 표시됩니다');
     gbList.scrollIntoView({ block: 'start', behavior: 'smooth' });
   });
+
+  /* ══════════════════════════════════════════════════════
+     첫 진입 참석 안내
+     이미 응답했거나 오늘 닫았으면 뜨지 않는다.
+     ══════════════════════════════════════════════════════ */
+  (function gate(){
+    var el = $('#gate');
+    if (!el) return;
+    var SKIP = 'onnit-wed-gate-skip-v1';
+    var today = new Date().toISOString().slice(0, 10);
+
+    if (/nogate/.test(location.hash)) return;    // 제작 페이지 미리보기
+    if (read(STORE_RSVP, null)) return;          // 이미 응답함
+    if (read(SKIP, '') === today) return;        // 오늘은 닫아둠
+
+    var opener = null;
+    function open(){
+      opener = document.activeElement;
+      el.classList.add('on');
+      document.body.style.overflow = 'hidden';
+      $('#gateGo').focus();
+    }
+    function close(){
+      el.classList.remove('on');
+      document.body.style.overflow = '';
+      if (opener && opener.focus) opener.focus();
+    }
+    setTimeout(open, 900);
+
+    $('#gateX').addEventListener('click', close);
+    $('#gateSkip').addEventListener('click', function(){
+      write(SKIP, today);
+      close();
+      toast('오늘은 다시 묻지 않습니다');
+    });
+    $('#gateGo').addEventListener('click', function(){
+      close();
+      var form = $('#rsvpForm');
+      var target = form && form.style.display !== 'none' ? form : $('#rsvpThanks');
+      if (target) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setTimeout(function(){ var n = $('#r-name'); if (n) n.focus({ preventScroll: true }); }, 700);
+    });
+    el.addEventListener('click', function(ev){ if (ev.target === el) close(); });
+    document.addEventListener('keydown', function(ev){
+      if (ev.key === 'Escape' && el.classList.contains('on')) close();
+    });
+  })();
+
+  /* ══════════════════════════════════════════════════════
+     꽃잎
+     커버에만 깔고, 화면 밖으로 나가면 멈춘다.
+     동작 줄이기 설정이면 아예 그리지 않는다.
+     ══════════════════════════════════════════════════════ */
+  (function petals(){
+    var cv = document.getElementById('petals');
+    if (!cv) return;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { cv.style.display = 'none'; return; }
+
+    var ctx = cv.getContext && cv.getContext('2d');
+    if (!ctx) { cv.style.display = 'none'; return; }
+
+    var host = cv.parentElement;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = 0, H = 0, parts = [], raf = 0, live = true;
+
+    var TONES = ['rgba(47,93,87,',   'rgba(203,214,208,',
+                 'rgba(233,224,214,', 'rgba(255,255,255,'];
+
+    function size(){
+      W = host.clientWidth; H = host.clientHeight;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function seed(){
+      var n = W < 420 ? 11 : 15;
+      parts = [];
+      for (var i = 0; i < n; i++) {
+        parts.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: 3.4 + Math.random() * 4.2,
+          vy: 0.13 + Math.random() * 0.24,
+          sway: 0.5 + Math.random() * 1.2,
+          phase: Math.random() * Math.PI * 2,
+          spin: (Math.random() - 0.5) * 0.012,
+          rot: Math.random() * Math.PI,
+          a: 0.16 + Math.random() * 0.3,
+          c: TONES[(Math.random() * TONES.length) | 0]
+        });
+      }
+    }
+    function petal(p){
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.beginPath();
+      // 한쪽이 뾰족한 잎 모양
+      ctx.moveTo(0, -p.r);
+      ctx.bezierCurveTo(p.r * 0.9, -p.r * 0.4, p.r * 0.7, p.r * 0.7, 0, p.r);
+      ctx.bezierCurveTo(-p.r * 0.7, p.r * 0.7, -p.r * 0.9, -p.r * 0.4, 0, -p.r);
+      ctx.fillStyle = p.c + p.a + ')';
+      ctx.fill();
+      ctx.restore();
+    }
+    function frame(){
+      if (!live) { raf = 0; return; }
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        p.phase += 0.008;
+        p.y += p.vy;
+        p.x += Math.sin(p.phase) * p.sway * 0.3;
+        p.rot += p.spin;
+        if (p.y - p.r > H) { p.y = -p.r * 2; p.x = Math.random() * W; }
+        if (p.x < -20) p.x = W + 20;
+        if (p.x > W + 20) p.x = -20;
+        petal(p);
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    function start(){ if (!raf) { live = true; raf = requestAnimationFrame(frame); } }
+    function stop(){ live = false; if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+
+    size(); seed(); start();
+
+    var rt;
+    window.addEventListener('resize', function(){
+      clearTimeout(rt);
+      rt = setTimeout(function(){ size(); seed(); }, 200);
+    });
+
+    /* 커버가 화면 밖이면 멈춘다 */
+    if (window.IntersectionObserver) {
+      new IntersectionObserver(function(es){
+        es[0].isIntersecting ? start() : stop();
+      }, { threshold: 0 }).observe(host);
+    }
+    document.addEventListener('visibilitychange', function(){
+      document.hidden ? stop() : start();
+    });
+  })();
 
   /* ─────────── 공유 ─────────── */
   function baseUrl(){
