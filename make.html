@@ -379,7 +379,9 @@ body{margin:0;background:var(--bg);color:var(--ink);
     intro: [
       { q:'요즘 빠져 있는 것',      g:'자전거로 출근하기',              b:'유화 그리기' },
       { q:'서로의 좋은 점',         g:'화를 낼 때도 목소리가 낮습니다', b:'말을 끝까지 들어 줍니다' },
-      { q:'결혼하면 하고 싶은 것',  g:'베란다를 넓히기',                b:'같이 아침을 먹기' }
+      { q:'결혼하면 하고 싶은 것',  g:'베란다를 넓히기',                b:'같이 아침을 먹기' },
+      { q:'결혼을 결심한 순간',
+        t:'한 사람이 아팠던 겨울이 있었습니다. 병실에서 사흘을 번갈아 지키고 나서,\n그때 이미 정해져 있었다고 나중에 둘 다 같은 말을 했습니다.' }
     ],
     tl: [
       { t:'2019 . 05', h:'처음 만난 날',
@@ -456,18 +458,44 @@ body{margin:0;background:var(--bg);color:var(--ink);
   function inRow(x, i){
     var w = document.createElement('div');
     w.className = 'row';
+    var nm = 'inm' + i;
     w.innerHTML =
       '<div class="rh"><span class="n">' + (i+1 < 10 ? '0'+(i+1) : i+1) + '</span><span class="sp"></span>' +
         '<button class="del" type="button" aria-label="이 문항 삭제">&times;</button></div>' +
       '<div class="f"><label>질문</label><input data-t="q" type="text" placeholder="요즘 빠져 있는 것"></div>' +
-      '<div class="two">' +
+      '<div class="f"><label>답하는 방식</label><div class="seg">' +
+        '<span><input type="radio" name="'+nm+'" id="'+nm+'a" value="apart"><label for="'+nm+'a">따로</label></span>' +
+        '<span><input type="radio" name="'+nm+'" id="'+nm+'t" value="together"><label for="'+nm+'t">함께</label></span>' +
+      '</div></div>' +
+      '<div class="two" data-m="apart">' +
         '<div class="f"><label>신부 답</label><textarea data-t="b" style="min-height:62px" placeholder="유화 그리기"></textarea></div>' +
         '<div class="f"><label>신랑 답</label><textarea data-t="g" style="min-height:62px" placeholder="자전거로 출근하기"></textarea></div>' +
-      '</div>';
+      '</div>' +
+      '<div class="f" data-m="together"><label>함께 답</label>' +
+        '<textarea data-t="t" style="min-height:74px" placeholder="둘이 함께 답한 내용을 적어 주세요."></textarea>' +
+        '<div class="help">청첩장에서 두 열을 접고 <b>한 줄로 눕습니다.</b> 긴 답에 어울립니다.</div></div>';
+
+    // t 가 정의되어 있으면 '함께'다. 빈 문자열도 '함께'로 친다 (아직 안 적었을 뿐이다)
+    var solo = x.t != null;
     w.querySelector('[data-t="q"]').value = x.q || '';
     w.querySelector('[data-t="b"]').value = x.b || '';
     w.querySelector('[data-t="g"]').value = x.g || '';
-    w.querySelectorAll('input,textarea').forEach(function(el){
+    w.querySelector('[data-t="t"]').value = x.t || '';
+    w.querySelector('#' + nm + (solo ? 't' : 'a')).checked = true;
+
+    function paint(){
+      var on = w.querySelector('input[value="together"]').checked ? 'together' : 'apart';
+      w.querySelectorAll('[data-m]').forEach(function(el){
+        el.style.display = el.getAttribute('data-m') === on ? '' : 'none';
+      });
+      if (on === 'together') grow(w.querySelector('[data-t="t"]'));
+    }
+    paint();
+
+    w.querySelectorAll('input[type="radio"]').forEach(function(el){
+      el.addEventListener('change', function(){ paint(); collectIn(); });
+    });
+    w.querySelectorAll('input[type="text"],textarea').forEach(function(el){
       el.addEventListener('input', collectIn);
     });
     w.querySelector('.del').addEventListener('click', function(){
@@ -482,11 +510,12 @@ body{margin:0;background:var(--bg);color:var(--ink);
   }
   function collectIn(){
     D.intro = $$('#inRows .row').map(function(r){
-      return {
-        q: r.querySelector('[data-t="q"]').value.trim(),
-        g: r.querySelector('[data-t="g"]').value.trim(),
-        b: r.querySelector('[data-t="b"]').value.trim()
-      };
+      var v = function(k){ return r.querySelector('[data-t="' + k + '"]').value.trim(); };
+      // 안 쓰는 쪽은 아예 담지 않는다. 주소가 그만큼 짧아진다.
+      var o = { q: v('q') };
+      if (r.querySelector('input[value="together"]').checked) o.t = v('t');
+      else { o.g = v('g'); o.b = v('b'); }
+      return o;
     });
     schedule();
   }
