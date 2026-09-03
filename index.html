@@ -4,30 +4,27 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
 <style>
 /* ════════════════════════════════════════
+   이 청첩장의 테마.
+
    청첩장은 종이의 은유다. 뷰어 테마와 무관하게
    흰 종이 한 세계로 못박고, 모든 색을 명시한다.
+
+   먹·선·청자 같은 공통값은 css/tokens.css 에 있다.
+   여기에는 이 청첩장에만 해당하는 값을 둔다.
+   두 번째 템플릿을 만들면 이 :root 블록부터 갈아끼우면 된다.
    ════════════════════════════════════════ */
 :root{
-  color-scheme:light;
   --paper:#FFFFFF;
   --paper-2:#F7F6F3;
   --paper-3:#F1EFEA;
-  --ink:#16181D;
-  --ink-2:#4A4E57;
-  --ink-3:#82868F;
-  --line:#E4E2DD;
-  --line-2:#CFCCC5;
-  --jade:#2F5D57;
-  --jade-2:#24483F;
-  --jade-wash:#EAF1EF;
-  --on-jade:#FFFFFF;
   --rose:#9B4A57;
   --shadow:0 1px 2px rgba(22,24,29,.05);
-  --fs:1;
+  --fs:1;          /* 큰 글씨 모드. 이 토큰 하나로 전 요소가 함께 커진다 */
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--paper-3)}
 body{
   background:var(--paper-3);
@@ -40,15 +37,8 @@ body{
   -webkit-font-smoothing:antialiased;
   margin:0;
 }
-h1,h2,h3,h4,p,dl,dd,figure,ul,ol{margin:0}
-ul,ol{padding:0;list-style:none}
-a{color:inherit;text-decoration:none}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-img{display:block;max-width:100%}
-:focus-visible{outline:2px solid var(--jade);outline-offset:3px;border-radius:2px}
 
 .batang{font-family:"Gowun Batang","Nanum Myeongjo",serif}
-.latin{font-family:"Cormorant Garamond","Gowun Batang",serif;font-variant-numeric:lining-nums tabular-nums}
 
 /* ── 무대: 데스크톱에선 종이 한 장이 놓인 것처럼 ── */
 .stage{max-width:460px;margin:0 auto;background:var(--paper);min-height:100vh;
@@ -417,14 +407,8 @@ img{display:block;max-width:100%}
 .fab.on{background:var(--jade);border-color:var(--jade);color:var(--on-jade)}
 .fab .t{font-family:"Cormorant Garamond",serif;font-size:.82rem;font-weight:600;letter-spacing:.02em}
 .fab svg{width:17px;height:17px}
-.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);
-  background:var(--ink);color:#fff;font-size:.8rem;padding:11px 20px;border-radius:99px;
-  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:60;white-space:nowrap}
-.toast.on{opacity:1;transform:translate(-50%,0)}
-
-@media (prefers-reduced-motion:reduce){
-  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
-}
+/* .toast 와 prefers-reduced-motion 은 css/base.css 로 옮겼다.
+   이 페이지엔 하단 바가 없어 --toast-b 기본값(26px)을 그대로 쓴다. */
 </style>
 
 <div class="stage">

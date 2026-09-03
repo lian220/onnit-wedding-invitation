@@ -4,31 +4,34 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
 <style>
+/* ════════════════════════════════════════
+   제작 도구의 테마.
+
+   이쪽은 종이가 아니라 앱이다. 회색 바탕 위에 흰 카드를 올리고,
+   본문 폰트도 시스템 폰트를 쓴다. 청첩장과 달라 보이는 게 맞다.
+
+   먹·선·청자 같은 공통값은 css/tokens.css 에 있다.
+   전에는 이 파일이 그 값들을 따로 들고 있었고, 청첩장 쪽과
+   미세하게 어긋나 있었다(#15171C vs #16181D 같은 식으로).
+   ════════════════════════════════════════ */
 :root{
-  color-scheme:light;
   --bg:#F2F3F1; --card:#FFFFFF; --sunk:#F7F8F6;
-  --ink:#15171C; --ink-2:#575C66; --ink-3:#8B909A; --ink-4:#B4B8C0;
-  --line:#E5E6E2; --line-2:#D2D4CE;
-  --jade:#2F5D57; --jade-p:#26504A; --jade-wash:#E8F0EE; --jade-line:#B9D2CC;
-  --on:#FFFFFF;
+  --ink-4:#B4B8C0;                    /* 플레이스홀더. 청첩장엔 없는 단계다 */
+  --jade-p:#26504A;                   /* 눌림 상태 */
+  --jade-line:#B9D2CC;
   --danger:#A8453F; --danger-wash:#FBEDEC;
-  --r:12px; --r-s:9px;
-  --tap:48px;
-  --bar:calc(64px + env(safe-area-inset-bottom, 0px));
+  --r:12px; --r-s:9px;                /* 앱의 라운드. 청첩장은 종이라 2~3px를 쓴다 */
+  --bar:calc(64px + var(--safe-b));
+  --toast-b:calc(var(--bar) + 16px);  /* 하단 바를 피해서 뜬다 */
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);
   font-family:"Noto Sans KR","Apple SD Gothic Neo",-apple-system,system-ui,sans-serif;
   font-size:16px;font-weight:400;line-height:1.7;-webkit-font-smoothing:antialiased;
   overscroll-behavior-y:none}
-h1,h2,h3,p,ul,li{margin:0;padding:0}
-ul{list-style:none}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
-input,select,textarea{font:inherit}
-:focus-visible{outline:2px solid var(--jade);outline-offset:2px;border-radius:4px}
-.latin{font-family:"Cormorant Garamond",serif;font-variant-numeric:tabular-nums}
 
 /* 모바일 폭에 맞춘 한 칸. 데스크톱에서도 같은 폭을 유지한다. */
 .app{max-width:480px;margin:0 auto;min-height:100%;background:var(--bg);
@@ -37,7 +40,7 @@ input,select,textarea{font:inherit}
 
 /* ══════ 헤더 ══════ */
 .hd{position:sticky;top:0;z-index:20;background:var(--card);
-  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+  border-bottom:1px solid var(--line);padding-top:var(--safe-t)}
 .hd-top{height:56px;display:flex;align-items:center;gap:10px;padding:0 16px}
 .hd-top h1{font-family:"Gowun Batang",serif;font-size:1.02rem;font-weight:700;letter-spacing:-.02em}
 .hd-top .dot{width:8px;height:8px;border-radius:50%;background:var(--jade);flex:none}
@@ -56,7 +59,7 @@ input,select,textarea{font:inherit}
   transition:background .15s,color .15s,border-color .15s}
 .tab .i{font-family:"Cormorant Garamond",serif;font-size:.76rem;font-weight:600;
   color:var(--ink-4);letter-spacing:.06em}
-.tab[aria-selected="true"]{background:var(--jade);color:var(--on);font-weight:500}
+.tab[aria-selected="true"]{background:var(--jade);color:var(--on-jade);font-weight:500}
 .tab[aria-selected="true"] .i{color:rgba(255,255,255,.6)}
 .tab:active{transform:scale(.97)}
 
@@ -123,7 +126,7 @@ input,select,textarea{font:inherit}
   max-width:480px;margin:0 auto;
   background:rgba(255,255,255,.94);backdrop-filter:blur(12px);
   border-top:1px solid var(--line);
-  padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+  padding:10px 16px calc(10px + var(--safe-b));
   display:flex;gap:9px}
 .btn{height:var(--tap);border-radius:var(--r-s);font-size:.92rem;font-weight:500;
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
@@ -131,7 +134,7 @@ input,select,textarea{font:inherit}
 .btn:active{transform:scale(.98)}
 .btn.ghost{flex:0 0 40%;border:1px solid var(--line-2);color:var(--ink)}
 .btn.ghost:active{background:var(--sunk)}
-.btn.fill{flex:1;background:var(--jade);color:var(--on)}
+.btn.fill{flex:1;background:var(--jade);color:var(--on-jade)}
 .btn.fill:active{background:var(--jade-p)}
 .btn svg{width:17px;height:17px;flex:none}
 
@@ -140,7 +143,7 @@ input,select,textarea{font:inherit}
   flex-direction:column}
 .pv.on{display:flex;animation:pvin .24s ease both}
 @keyframes pvin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.pv-hd{height:calc(56px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);
+.pv-hd{height:calc(56px + var(--safe-t));padding-top:var(--safe-t);
   background:var(--card);border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:12px;padding-left:14px;padding-right:14px;flex:none}
 .pv-hd .t{font-size:.92rem;font-weight:500}
@@ -165,12 +168,8 @@ input,select,textarea{font:inherit}
 .linkbox .meta b{font-family:"Cormorant Garamond",serif;color:var(--jade);font-weight:600}
 .linkbox .meta .warn{color:var(--danger)}
 
-.toast{position:fixed;left:50%;bottom:calc(var(--bar) + 16px);transform:translate(-50%,10px);
-  background:var(--ink);color:#fff;font-size:.85rem;padding:12px 20px;border-radius:99px;
-  opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:80;
-  white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
-.toast.on{opacity:1;transform:translate(-50%,0)}
-@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* .toast 와 prefers-reduced-motion 은 css/base.css 로 옮겼다.
+   뜨는 높이는 위 :root 의 --toast-b 로 정한다. */
 </style>
 
 <div class="app">

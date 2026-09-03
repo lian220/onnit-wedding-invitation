@@ -2,3 +2,6 @@
 .playwright-mcp/
 node_modules/
 *.b64
+
+# 수집한 참고 스크린샷 (5MB, 로컬 참고용)
+claudedocs/samples/
