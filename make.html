@@ -185,9 +185,10 @@ body{margin:0;background:var(--bg);color:var(--ink);
       <button class="tab" role="tab" data-tab="p1" aria-selected="true"><span class="i">01</span>인물</button>
       <button class="tab" role="tab" data-tab="p2" aria-selected="false"><span class="i">02</span>예식</button>
       <button class="tab" role="tab" data-tab="p3" aria-selected="false"><span class="i">03</span>인사말</button>
-      <button class="tab" role="tab" data-tab="p4" aria-selected="false"><span class="i">04</span>이야기</button>
-      <button class="tab" role="tab" data-tab="p5" aria-selected="false"><span class="i">05</span>계좌</button>
-      <button class="tab" role="tab" data-tab="p6" aria-selected="false"><span class="i">06</span>링크</button>
+      <button class="tab" role="tab" data-tab="p4" aria-selected="false"><span class="i">04</span>소개</button>
+      <button class="tab" role="tab" data-tab="p5" aria-selected="false"><span class="i">05</span>이야기</button>
+      <button class="tab" role="tab" data-tab="p6" aria-selected="false"><span class="i">06</span>계좌</button>
+      <button class="tab" role="tab" data-tab="p7" aria-selected="false"><span class="i">07</span>링크</button>
     </div>
   </header>
 
@@ -285,7 +286,20 @@ body{margin:0;background:var(--bg);color:var(--ink);
     </section>
 
     <!-- ══ 04 이야기 ══ -->
+    <!-- ══ 04 소개 ══ -->
     <section class="panel" id="p4" role="tabpanel">
+      <div class="hint-top">같은 질문에 <b>두 분이 각자 답</b>하면 청첩장에서 좌우로 나란히 놓입니다.
+        한쪽만 답해도 됩니다. 전부 지우면 이 섹션이 사라집니다.</div>
+      <div class="grp">
+        <h2><span class="b"></span>우리 두 사람</h2>
+        <div class="in">
+          <div id="inRows" style="display:grid;gap:11px"></div>
+          <button class="add" type="button" id="inAdd">＋ 문항 추가</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="p5" role="tabpanel">
       <div class="hint-top">마지막 항목이 예식으로 간주되어 강조됩니다. 전부 지우면 이 섹션이 사라집니다.</div>
       <div class="grp">
         <h2><span class="b"></span>우리의 시간</h2>
@@ -297,7 +311,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
     </section>
 
     <!-- ══ 05 계좌 ══ -->
-    <section class="panel" id="p5" role="tabpanel">
+    <section class="panel" id="p6" role="tabpanel">
       <div class="hint-top">데모입니다. 링크에 내용이 그대로 담기니 <b>실제 계좌번호는 넣지 마세요.</b></div>
       <div class="grp">
         <h2><span class="b"></span>마음 전하실 곳</h2>
@@ -309,7 +323,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
     </section>
 
     <!-- ══ 06 링크 ══ -->
-    <section class="panel" id="p6" role="tabpanel">
+    <section class="panel" id="p7" role="tabpanel">
       <div class="hint-top">서버에 저장하지 않습니다. 입력한 내용이 주소 안에 담기므로,
         이 링크를 받은 사람은 바로 청첩장을 보게 됩니다.</div>
       <div class="linkbox">
@@ -362,6 +376,11 @@ body{margin:0;background:var(--bg);color:var(--ink);
     d: '2027-04-17T13:00',
     met: '2019-05-20',
     v: { n:'라온 컨벤션', h:'5층 그랜드홀', a:'서울 강남구 테헤란로 152' },
+    intro: [
+      { q:'요즘 빠져 있는 것',      g:'자전거로 출근하기',              b:'유화 그리기' },
+      { q:'서로의 좋은 점',         g:'화를 낼 때도 목소리가 낮습니다', b:'말을 끝까지 들어 줍니다' },
+      { q:'결혼하면 하고 싶은 것',  g:'베란다를 넓히기',                b:'같이 아침을 먹기' }
+    ],
     tl: [
       { t:'2019 . 05', h:'처음 만난 날',
         b:'친구의 결혼식 피로연에서 옆자리에 앉았습니다. 그날 나눈 이야기가 여기까지 왔습니다.' },
@@ -432,6 +451,52 @@ body{margin:0;background:var(--bg);color:var(--ink);
   }
 
   /* ── 타임라인 ── */
+  /* ── 우리 두 사람 ──
+     한 문항에 질문 하나와 두 사람의 답. 청첩장에서는 신부가 왼쪽, 신랑이 오른쪽에 선다. */
+  function inRow(x, i){
+    var w = document.createElement('div');
+    w.className = 'row';
+    w.innerHTML =
+      '<div class="rh"><span class="n">' + (i+1 < 10 ? '0'+(i+1) : i+1) + '</span><span class="sp"></span>' +
+        '<button class="del" type="button" aria-label="이 문항 삭제">&times;</button></div>' +
+      '<div class="f"><label>질문</label><input data-t="q" type="text" placeholder="요즘 빠져 있는 것"></div>' +
+      '<div class="two">' +
+        '<div class="f"><label>신부 답</label><textarea data-t="b" style="min-height:62px" placeholder="유화 그리기"></textarea></div>' +
+        '<div class="f"><label>신랑 답</label><textarea data-t="g" style="min-height:62px" placeholder="자전거로 출근하기"></textarea></div>' +
+      '</div>';
+    w.querySelector('[data-t="q"]').value = x.q || '';
+    w.querySelector('[data-t="b"]').value = x.b || '';
+    w.querySelector('[data-t="g"]').value = x.g || '';
+    w.querySelectorAll('input,textarea').forEach(function(el){
+      el.addEventListener('input', collectIn);
+    });
+    w.querySelector('.del').addEventListener('click', function(){
+      D.intro.splice(i,1); renderIn(); schedule();
+    });
+    return w;
+  }
+  function renderIn(){
+    var box = $('#inRows'); box.innerHTML = '';
+    (D.intro || []).forEach(function(x,i){ box.appendChild(inRow(x,i)); });
+    growAll();
+  }
+  function collectIn(){
+    D.intro = $$('#inRows .row').map(function(r){
+      return {
+        q: r.querySelector('[data-t="q"]').value.trim(),
+        g: r.querySelector('[data-t="g"]').value.trim(),
+        b: r.querySelector('[data-t="b"]').value.trim()
+      };
+    });
+    schedule();
+  }
+  $('#inAdd').addEventListener('click', function(){
+    if (!D.intro) D.intro = [];
+    D.intro.push({ q:'', g:'', b:'' }); renderIn(); schedule();
+    var rows = $$('#inRows .row');
+    if (rows.length) rows[rows.length-1].scrollIntoView({ block:'center', behavior:'smooth' });
+  });
+
   function tlRow(x, i){
     var w = document.createElement('div');
     w.className = 'row';
@@ -533,7 +598,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
     setSeg('g_o', D.g.o);
     setSeg('b_o', D.b.o);
     $('#greet').value = (D.greet || []).join('\n\n');
-    renderTl(); renderAcc();
+    renderIn(); renderTl(); renderAcc();
   }
   function setSeg(name, val){
     var found = false;
