@@ -1,0 +1,45 @@
+/* ════════════════════════════════════════════════════════
+   리셋과 전역 규칙, 그리고 두 페이지가 정말 같은 컴포넌트.
+
+   여기 있는 것들의 공통점: 청첩장 디자인이 바뀌어도 안 바뀐다.
+   .f 나 .seg 는 두 페이지에 같은 이름으로 있지만 구현이 다르다
+   (청첩장 52px·라운드 3px / 제작 도구 48px·라운드 9px).
+   이름만 겹치는 별개 컴포넌트라 여기 두지 않는다.
+   ════════════════════════════════════════════════════════ */
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+h1,h2,h3,h4,p,dl,dd,figure,ul,ol,li{margin:0;padding:0}
+ul,ol{list-style:none}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,select,textarea{font:inherit}
+img{display:block;max-width:100%}
+
+:focus-visible{outline:2px solid var(--jade);outline-offset:3px;border-radius:2px}
+
+/* 긴 영문 단어와 URL이 상자 밖으로 나가지 않게.
+
+   전에는 .acct-row .r2, .gb-item .msg, .perso .out 세 곳에만 word-break 가
+   붙어 있었고 .greet p 에는 빠져 있었다. 인사말에 URL을 넣으면 12px 넘쳤다.
+   컴포넌트마다 따로 붙이면 반드시 하나를 빠뜨린다. 여기 한 줄로 둔다.
+
+   anywhere 가 아니라 break-word 인 이유: anywhere 는 min-content 계산에도
+   영향을 줘서 flex/grid 항목이 예상보다 좁아진다. break-word 는 넘칠 때만 끊는다. */
+body{overflow-wrap:break-word}
+
+/* 라틴 숫자·영문. 두 페이지 모두 Cormorant 로 통일한다. */
+.latin{font-family:"Cormorant Garamond","Gowun Batang",serif;
+  font-variant-numeric:lining-nums tabular-nums}
+
+/* ── 토스트 ──
+   구조·동작이 두 페이지가 같다. 뜨는 높이만 --toast-b 로 각자 정한다. */
+.toast{position:fixed;left:50%;bottom:var(--toast-b);transform:translate(-50%,12px);
+  background:var(--ink);color:#fff;font-size:.84rem;padding:12px 20px;border-radius:99px;
+  opacity:0;pointer-events:none;transition:opacity .24s,transform .24s;z-index:80;
+  white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
