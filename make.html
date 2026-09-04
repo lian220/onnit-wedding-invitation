@@ -43,7 +43,10 @@ body{margin:0;background:var(--bg);color:var(--ink);
   border-bottom:1px solid var(--line);padding-top:var(--safe-t)}
 .hd-top{height:56px;display:flex;align-items:center;gap:10px;padding:0 16px}
 .hd-top h1{font-family:"Gowun Batang",serif;font-size:1.02rem;font-weight:700;letter-spacing:-.02em}
-.hd-top .dot{width:8px;height:8px;border-radius:50%;background:var(--jade);flex:none}
+.hd-top .home{width:32px;height:32px;margin-left:-8px;flex:none;border-radius:var(--r-s);
+  display:grid;place-items:center;color:var(--ink-2)}
+.hd-top .home svg{width:20px;height:20px}
+.hd-top .home:active{background:var(--sunk)}
 .hd-top .sp{flex:1}
 .reset{height:36px;padding:0 12px;border-radius:var(--r-s);font-size:.8rem;
   color:var(--ink-3);border:1px solid var(--line-2)}
@@ -176,7 +179,9 @@ body{margin:0;background:var(--bg);color:var(--ink);
 
   <header class="hd">
     <div class="hd-top">
-      <span class="dot"></span>
+      <a class="home" href="./" aria-label="홈으로">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m14 6-6 6 6 6"/></svg>
+      </a>
       <h1>청첩장 만들기</h1>
       <span class="sp"></span>
       <button class="reset" type="button" id="btnReset">처음값</button>
@@ -449,7 +454,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
     return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   }
   function url(){
-    return location.href.replace(/[?#].*$/,'').replace(/\/[^\/]*$/,'/') + 'index.html#d=' + encode(D);
+    return location.href.replace(/[?#].*$/,'').replace(/\/[^\/]*$/,'/') + 'invite.html#d=' + encode(D);
   }
 
   /* ── 타임라인 ── */
