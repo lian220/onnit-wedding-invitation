@@ -1,6 +1,16 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>강태윤 · 윤채원 결혼합니다</title>
+<meta name="description" content="강태윤 · 윤채원의 결혼식에 초대합니다. 2027년 4월 17일 토요일 오후 1시, 라온 컨벤션.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="강태윤 · 윤채원 결혼합니다">
+<meta property="og:description" content="2027년 4월 17일 토요일 오후 1시 · 라온 컨벤션 5층 그랜드홀">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%232F5D57'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
@@ -454,6 +464,8 @@ body{
 /* .toast 와 prefers-reduced-motion 은 css/base.css 로 옮겼다.
    이 페이지엔 하단 바가 없어 --toast-b 기본값(26px)을 그대로 쓴다. */
 </style>
+</head>
+<body>
 
 <div class="stage">
 
@@ -834,7 +846,9 @@ body{
       if (v && typeof v === 'object' && !Array.isArray(v) &&
           base[k] && typeof base[k] === 'object' && !Array.isArray(base[k])) {
         out[k] = deepMerge(base[k], v);
-      } else if (v !== undefined && v !== null && v !== '') {
+      } else if (v !== undefined && v !== null) {
+        // 빈 문자열도 값이다. 전에는 여기서 걸러서 혼주나 영문 이름을
+        // 비우면 기본값이 되살아났고, 지울 방법이 아예 없었다.
         out[k] = v;
       }
     }
@@ -955,6 +969,14 @@ body{
   }
   function pad(n){ return n < 10 ? '0' + n : String(n); }
 
+  /* 혼주를 적지 않는 청첩장도 있다. 빈 자리에 가운뎃점과 '의'만 남으면
+     '  ·   의 ' 같은 문자열이 그대로 화면에 나간다. 있는 것만 엮는다. */
+  function parentMeta(p){
+    var names = [p.f, p.m].filter(Boolean).join(' · ');
+    if (!names) return p.o || '';
+    return p.o ? names + ' 의 ' + p.o : names;
+  }
+
   /* 파생값 */
   var place    = D.v.n + ' ' + D.v.h;
   var COMPUTED = {
@@ -967,8 +989,8 @@ body{
                  WEDDING.getDate() + '일 ' + WD_KO[WEDDING.getDay()] + '요일 ' + ampm(WEDDING),
     '_gGiven':   given(D.g.n),
     '_bGiven':   given(D.b.n),
-    '_gMeta':    D.g.f + ' · ' + D.g.m + ' 의 ' + D.g.o,
-    '_bMeta':    D.b.f + ' · ' + D.b.m + ' 의 ' + D.b.o,
+    '_gMeta':    parentMeta(D.g),
+    '_bMeta':    parentMeta(D.b),
     '_sig':      (D.g.r || given(D.g.n)) + ' & ' + (D.b.r || given(D.b.n))
   };
   function field(path){
@@ -982,9 +1004,32 @@ body{
     return cur == null ? '' : cur;
   }
   $$('[data-f]').forEach(function(el){
-    var v = field(el.getAttribute('data-f'));
-    if (v !== '') el.textContent = v;
+    // 빈 값이어도 넣는다. 전에는 건너뛰어서 마크업에 박힌 기본 문구가 남았다.
+    el.textContent = field(el.getAttribute('data-f'));
   });
+
+  /* 비면 사라져야 하는 것들.
+     혼주 줄의 가운뎃점, '의 장남', 연락처 버튼. */
+  (function prune(){
+    $$('.parents > div').forEach(function(row, i){
+      var side = i === 0 ? D.g : D.b;
+      var chr  = row.querySelector('.chr');
+      var ofEl = row.querySelectorAll('.p-of')[1];
+      if (chr && !(side.f && side.m)) chr.style.display = 'none';
+      if (ofEl && (!side.o || (!side.f && !side.m))) ofEl.style.display = 'none';
+      if (!side.f && !side.m && !side.o) row.style.display = 'none';
+    });
+    /* 연락처를 비우면 전화·문자 버튼을 없앤다.
+       같은 data-href 가 연락하기 섹션과 예식 당일 배너 두 곳에 있으므로
+       querySelector 하나로는 배너 쪽만 잡힌다. 전부 훑는다. */
+    [['_telG', '_smsG', D.g.t], ['_telB', '_smsB', D.b.t]].forEach(function(t){
+      if (t[2]) return;
+      $$('[data-href="' + t[0] + '"], [data-href="' + t[1] + '"]').forEach(function(a){
+        var box = a.closest('.tel');
+        (box || a).style.display = 'none';
+      });
+    });
+  })();
 
   var addrBtn = document.getElementById('addrCopy');
   if (addrBtn) addrBtn.setAttribute('data-copy', D.v.a);
@@ -995,8 +1040,8 @@ body{
     '_naver': 'https://map.naver.com/p/search/' + q,
     '_kakao': 'https://map.kakao.com/?q=' + q,
     '_tmap':  'https://tmap.life/route?goalname=' + q,
-    '_telG':  'tel:' + D.g.t, '_smsG': 'sms:' + D.g.t,
-    '_telB':  'tel:' + D.b.t, '_smsB': 'sms:' + D.b.t
+    '_telG':  D.g.t ? 'tel:' + D.g.t : '', '_smsG': D.g.t ? 'sms:' + D.g.t : '',
+    '_telB':  D.b.t ? 'tel:' + D.b.t : '', '_smsB': D.b.t ? 'sms:' + D.b.t : ''
   };
   $$('[data-href]').forEach(function(el){
     var h = HREFS[el.getAttribute('data-href')];
@@ -1433,8 +1478,18 @@ body{
   })();
 
   /* ─────────── 공유 ─────────── */
-  function baseUrl(){
-    return location.origin + location.pathname;
+  /* 이 청첩장의 주소. #d= 를 반드시 데리고 간다.
+
+     전에는 origin + pathname 만 돌려줬다. 링크 복사 · 다른 앱으로 공유 ·
+     맞춤 링크 · QR 이 전부 이 함수를 쓰므로, 제작 페이지로 만든 청첩장을
+     하객이 다시 공유하는 순간 기본 데모(강태윤 · 윤채원)로 돌아갔다.
+     '링크 자체가 청첩장'이라는 전제가 공유 버튼에서 깨지고 있었다.
+
+     ?to= 는 해시 앞에 와야 한다. 물음표가 # 뒤에 오면 검색 문자열이 아니라
+     해시의 일부가 된다. 그래서 붙이는 자리를 인자로 받는다. */
+  function baseUrl(query){
+    return location.origin + location.pathname +
+           (query ? '?' + query : '') + location.hash;
   }
   $('#shareLink').addEventListener('click', function(){
     copyText(baseUrl()).then(
@@ -1463,7 +1518,7 @@ body{
   var persoIn = $('#persoName'), persoOut = $('#persoOut');
   function persoUrl(){
     var v = persoIn.value.trim();
-    return v ? baseUrl() + '?to=' + encodeURIComponent(v) : '';
+    return v ? baseUrl('to=' + encodeURIComponent(v)) : '';
   }
   function paintPerso(){
     var u = persoUrl();
@@ -1485,13 +1540,28 @@ body{
   /* QR */
   (function qr(){
     var c = document.getElementById('qrc');
-    if (!c || typeof QRious === 'undefined') { if (c) c.style.display = 'none'; return; }
+    if (!c) return;
+    var cap = c.parentElement.querySelector('.cap');
+    /* QR 한 장에 들어가는 글자에는 한계가 있다(레벨 M 기준 2,300자 남짓).
+       내용을 주소에 싣는 방식이라 청첩장을 채울수록 주소가 길어지고,
+       어느 지점부터는 QR 을 못 만든다. 조용히 사라지면 고장으로 보이므로
+       그 자리에 이유를 적는다. 짧은 주소가 생기면 함께 풀리는 문제다. */
+    function fail(msg){
+      c.style.display = 'none';
+      if (cap) cap.textContent = msg;
+    }
+    if (typeof QRious === 'undefined') { fail('QR 코드를 불러오지 못했습니다'); return; }
     try {
       new QRious({
         element: c, value: baseUrl(), size: 150,
         background: '#ffffff', foreground: '#16181D', level: 'M', padding: 0
       });
-    } catch (e) { c.style.display = 'none'; }
+    } catch (e) {
+      fail('주소가 길어 QR 코드로 담기지 않습니다');
+    }
   })();
 })();
 </script>
+
+</body>
+</html>
