@@ -18,6 +18,12 @@
       2차까지는 재방문 횟수를 이그레스에 그대로 곱했다.
 
   (c) 썸네일을 30KB 로 잡았다.  3열 그리드 240px WebP 는 12KB 쯤이다.
+
+── 4차에서 더한 것 ─────────────────────────────────────────────────
+3차까지의 모델은 60장짜리 격자 갤러리를 가정한다. 실제로 채택한 갤러리는
+그게 아니라 '밴드 3장 교체'라, 같은 문서의 숫자를 그대로 쓰면 175배 과대하다.
+아래 BAND_* 가 채택안의 모델이고, SB_FREE 는 3차에서 통째로 빠져 있던
+Supabase 무료 티어다. 60장 모델은 나중에 격자 갤러리를 붙일 때를 위해 남겨 둔다.
 """
 
 # ── 스토리지 단가 ───────────────────────────────────────────────────
@@ -34,6 +40,9 @@ B2 = dict(st=.00695, out=.01, free_st=10)
 # supabase.com/pricing (Pro). 자체 CDN 포함.
 SB = dict(base=25, inc_st=100, inc_out=250, over_st=.0213,
           over_out=.09, over_out_cached=.03)
+# 같은 페이지의 Free 티어. 3차에서 빠져 있었다. 초과 과금이 아니라 정지다.
+SB_FREE = dict(base=0, inc_st=1, inc_out=5, inc_out_cached=5,
+               db_mb=500, pause_days=7, max_projects=2)
 
 # ── CDN 단가 ────────────────────────────────────────────────────────
 # AWS Price List API: AmazonCloudFront, location "Asia Pacific" (한국 포함)
@@ -57,6 +66,18 @@ N_PHOTOS = 60       # 살롱드레터 상한
 PER_CARD_GB = N_PHOTOS * (PHOTO_KB + THUMB_KB) / MB / MB   # 원본 + 썸네일
 PUT_PER_CARD = N_PHOTOS * 2
 ORIGIN_GET_PER_CARD = N_PHOTOS * 2      # 캐시 미스. 객체당 최초 1회로 잡는다.
+
+# ── 밴드 모델 (채택안) ──────────────────────────────────────────────
+# 격자 갤러리가 아니라 본문에 박힌 사진 밴드 3장을 사용자 사진으로 바꾼다.
+# 크기는 추정이 아니라 리포의 img/*.jpg 를 cwebp 로 실제 인코딩해 잰 값이다.
+#   원본 920x613 JPG 76~88KB → WebP q75 27~32KB (원본과 육안 구분 불가)
+# 920px 인 이유는 밴드가 최대 460px 폭이고 2배 밀도까지 받기 때문이다.
+BAND_KB, N_BANDS = 30, 3
+BAND_CARD_GB = N_BANDS * BAND_KB / MB / MB
+
+# 밴드는 본문 스크롤에 있어 갤러리보다 더 많은 하객이 본다. 대신 장수가 적다.
+BAND_INVITEES, BAND_SCROLL, BAND_REVISIT = 300, 0.70, 1.05
+BAND_OUT_GB = BAND_INVITEES * BAND_SCROLL * N_BANDS * BAND_KB * BAND_REVISIT / MB / MB
 
 PRICE_KRW, FX = 14900, 1400     # 살롱드레터 상시 할인가, 환율 가정
 
@@ -158,6 +179,20 @@ if __name__ == '__main__':
     print('  저장 %.1f배 · 이그레스 %.1f배' % (raw_card/PER_CARD_GB, raw_out/BASE.out_gb))
     row('원본 100건', (raw_card*100*12, raw_out*100, BASE.reqs*100,
                        PUT_PER_CARD*100, ORIGIN_GET_PER_CARD*100))
+
+    print('\n=== 4차 · 밴드 3장 모델 (채택안) ===')
+    print('  1건 저장 %.0fKB · 이그레스 %.0fMB   (60장 모델 대비 저장 1/%.0f, 이그레스 1/%.0f)'
+          % (BAND_CARD_GB*MB*MB, BAND_OUT_GB*MB,
+             PER_CARD_GB/BAND_CARD_GB, BASE.out_gb/BAND_OUT_GB))
+    for tier_name, sb in (('Free', SB_FREE), ('Pro', SB)):
+        st_cards = sb['inc_st'] / BAND_CARD_GB
+        out_cards = sb['inc_out'] / BAND_OUT_GB
+        both = (sb['inc_out'] + sb['inc_out_cached']) / BAND_OUT_GB if 'inc_out_cached' in sb else out_cards*2
+        print('  %-5s 저장 %2dGB → %8s건 누적   이그레스 %3dGB → 월 %6s건 (캐시분까지 %s건)'
+              % (tier_name, sb['inc_st'], f'{st_cards:,.0f}',
+                 sb['inc_out'], f'{out_cards:,.0f}', f'{both:,.0f}'))
+    print('  → 용량이 아니라 Free 의 %d일 무활동 일시정지가 실질 제약이다.'
+          % SB_FREE['pause_days'])
 
     print('\n=== 매출 대비 (₩%s/건, ₩%s/$) ===' % (f'{PRICE_KRW:,}', f'{FX:,}'))
     for label, n in (('100건', 100), ('1,000건', 1000), ('10,000건', 10000)):
