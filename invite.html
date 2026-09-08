@@ -1100,7 +1100,9 @@ body{
     if (!order.length) { box.style.display = 'none'; return; }
     box.innerHTML = order.map(function(k){
       var rows = groups[k].map(function(a){
-        var full = a.bank + ' ' + a.no + ' ' + String(a.who || '').split(' ').pop();
+        // 예금주를 비운 계좌도 있다. 빈 조각이 섞이면 복사 문자열에 공백이 남는다.
+        var full = [a.bank, a.no, String(a.who || '').split(' ').pop()]
+          .filter(Boolean).join(' ');
         return '<div class="acct-row"><div class="l">' +
           '<div class="r1">' + esc(a.who || '') + '</div>' +
           '<div class="r2">' + esc(a.bank || '') + ' <b>' + esc(a.no) + '</b></div></div>' +
@@ -1376,8 +1378,26 @@ body{
       setTimeout(function(){ var n = $('#r-name'); if (n) n.focus({ preventScroll: true }); }, 700);
     });
     el.addEventListener('click', function(ev){ if (ev.target === el) close(); });
+
+    /* 포커스 트랩 — Tab 이 모달 밖으로 새면 뒤 화면이 조작된다.
+       모달 안 버튼 셋을 순환시키고, Esc 로만 빠져나간다. */
+    function focusables(){
+      return [].slice.call(el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter(function(n){ return !n.disabled && n.offsetParent !== null; });
+    }
     document.addEventListener('keydown', function(ev){
-      if (ev.key === 'Escape' && el.classList.contains('on')) close();
+      if (!el.classList.contains('on')) return;
+      if (ev.key === 'Escape') { close(); return; }
+      if (ev.key !== 'Tab') return;
+      var f = focusables();
+      if (!f.length) { ev.preventDefault(); return; }
+      var first = f[0], last = f[f.length - 1];
+      // 포커스가 이미 모달 밖이면 (뒤 화면에서 Tab 으로 들어오는 경우) 안으로 되돌린다
+      if (el.contains(document.activeElement) === false) {
+        ev.preventDefault(); first.focus(); return;
+      }
+      if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+      else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
     });
   })();
 
@@ -1455,10 +1475,14 @@ body{
       }
       raf = requestAnimationFrame(frame);
     }
+    /* 두 조건이 모두 참일 때만 돈다 — 커버가 화면 안에 있고, 탭이 보일 때.
+       전에는 탭으로 돌아오면 커버가 한참 위로 지나갔어도 다시 그렸다. */
+    var onScreen = true, tabShown = !document.hidden;
+    function sync(){ (onScreen && tabShown) ? start() : stop(); }
     function start(){ if (!raf) { live = true; raf = requestAnimationFrame(frame); } }
     function stop(){ live = false; if (raf) { cancelAnimationFrame(raf); raf = 0; } }
 
-    size(); seed(); start();
+    size(); seed(); sync();
 
     var rt;
     window.addEventListener('resize', function(){
@@ -1469,11 +1493,11 @@ body{
     /* 커버가 화면 밖이면 멈춘다 */
     if (window.IntersectionObserver) {
       new IntersectionObserver(function(es){
-        es[0].isIntersecting ? start() : stop();
+        onScreen = es[0].isIntersecting; sync();
       }, { threshold: 0 }).observe(host);
     }
     document.addEventListener('visibilitychange', function(){
-      document.hidden ? stop() : start();
+      tabShown = !document.hidden; sync();
     });
   })();
 
