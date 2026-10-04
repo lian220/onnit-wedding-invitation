@@ -25,6 +25,12 @@ open make.html           # 제작 페이지 (미리보기 때문에 서버가 �
 python3 -m http.server 8080   # make.html 은 이쪽으로 열어야 미리보기가 뜬다
 ```
 
+배포는 **Cloudflare Pages** 다. `main` 에 push 하면 그대로 올라간다. 빌드 명령은 없다.
+Pages 는 `/invite.html` 을 `/invite` 로 308 리다이렉트한다. 이미 뿌려진 `invite.html#d=…` 링크는
+fragment 와 query 가 리다이렉트를 넘어 살아남으므로 깨지지 않고 한 번 더 튈 뿐이다.
+로컬 `http.server` 에는 그 리다이렉트가 없어서 페이지가 만드는 주소는 `.html` 을 유지한다.
+(전에는 GitHub Pages 였다. 결제가 붙으면 약관에 걸려서 옮겼다.)
+
 ## 세 개의 페이지
 
 | 파일 | 무엇인가 |
