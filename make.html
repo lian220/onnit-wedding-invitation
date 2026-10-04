@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>청첩장 만들기</title>
-<meta name="description" content="로그인 없이 만드는 모바일 청첩장. 일곱 단계를 채우면 청첩장 주소가 만들어집니다.">
+<meta name="description" content="모바일 청첩장 만들기. 일곱 단계를 채우면 주소가 만들어지고, 카카오 로그인으로 저장하면 짧은 주소가 생깁니다.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%232F5D57'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,6 +12,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ════════════════════════════════════════
    제작 도구의 테마.
@@ -337,8 +339,29 @@ body{margin:0;background:var(--bg);color:var(--ink);
 
     <!-- ══ 06 링크 ══ -->
     <section class="panel" id="p7" role="tabpanel" aria-labelledby="tab-p7">
-      <div class="hint-top">서버에 저장하지 않습니다. 입력한 내용이 주소 안에 담기므로,
-        이 링크를 받은 사람은 바로 청첩장을 보게 됩니다.</div>
+      <div class="hint-top">주소가 둘입니다. <b>긴 주소</b>는 내용이 주소 안에 담겨 서버 없이 열립니다.
+        <b>짧은 주소</b>는 카카오로 로그인해 서버에 저장하면 만들어지고, 발행해야 하객에게 열립니다.</div>
+      <div class="linkbox" id="srvBox">
+        <h3><span class="b"></span>짧은 주소</h3>
+        <div class="url latin" id="srvOut">저장하면 짧은 주소가 만들어집니다</div>
+        <div class="meta" id="srvMeta">아직 서버에 저장하지 않았습니다.</div>
+        <div class="in" style="margin-top:12px;padding:0">
+          <button class="btn fill" type="button" id="btnSave" style="width:100%">저장하고 짧은 주소 만들기</button>
+          <button class="btn ghost" type="button" id="btnPublish" style="width:100%;flex:none" hidden>발행하기 — 하객에게 열립니다</button>
+          <button class="btn ghost" type="button" id="btnCopyShort" style="width:100%;flex:none" hidden>짧은 주소 복사</button>
+        </div>
+      </div>
+
+      <div class="grp" id="meBox">
+        <h2><span class="b"></span>내 계정</h2>
+        <div class="in">
+          <div class="meta" id="meOut">로그인하지 않았습니다. 저장할 때 카카오 로그인을 묻습니다.</div>
+          <button class="btn ghost" type="button" id="btnLogin" style="width:100%;flex:none">카카오로 로그인</button>
+          <button class="btn ghost" type="button" id="btnLogout" style="width:100%;flex:none" hidden>로그아웃</button>
+          <div id="mineList" style="display:grid;gap:8px"></div>
+        </div>
+      </div>
+
       <div class="linkbox">
         <h3><span class="b"></span>청첩장 링크</h3>
         <div class="url latin" id="linkOut">주소를 만드는 중…</div>
@@ -433,6 +456,33 @@ body{margin:0;background:var(--bg);color:var(--ink);
   var $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
 
   var DRAFT = 'onnit-make-draft-v1';
+  var CURKEY  = 'onnit-make-cur-v1';       // 지금 고치는 서버 행 { id, published_at }
+  var PENDING = 'onnit-make-pending-v1';   // 로그인 왕복 중에 보류한 동작. 'save' 하나뿐이다
+
+  /* supabase-js. UMD 라 window.supabase 로 온다. PKCE 라 복귀 주소가 ?code= 다 —
+     #d= 와 해시를 다투지 않는다. 세션은 localStorage 에 남아 새로고침을 넘긴다. */
+  var supa = window.supabase.createClient(window.ONNIT.SUPABASE_URL, window.ONNIT.SUPABASE_ANON_KEY, {
+    auth: { flowType: 'pkce', persistSession: true, detectSessionInUrl: true }
+  });
+
+  var CUR = null;
+  try { CUR = JSON.parse(localStorage.getItem(CURKEY) || 'null'); } catch (e) {}
+  function setCur(c){
+    CUR = c;
+    try { c ? localStorage.setItem(CURKEY, JSON.stringify(c)) : localStorage.removeItem(CURKEY); } catch (e) {}
+  }
+
+  /* 8자 base62. 62⁸ 이라 추측으로 못 맞힌다. 256 % 62 의 치우침은 248 이상을 버려서 없앤다. */
+  function newId(){
+    var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', out = '';
+    while (out.length < 8) {
+      var buf = new Uint8Array(16); crypto.getRandomValues(buf);
+      for (var i = 0; i < buf.length && out.length < 8; i++) if (buf[i] < 248) out += A[buf[i] % 62];
+    }
+    return out;
+  }
+
+  var QID = (location.search.match(/[?&]id=([A-Za-z0-9]{8})(?:&|$)/) || [])[1] || '';
 
   /* base64url → JSON. 청첩장 쪽 fromHash 와 같은 규칙을 읽는다. */
   function decode(b64){
@@ -457,7 +507,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
   function boot(){
     var m = (location.hash || '').match(/[#&]d=([^&]+)/);
     if (m) {
-      try { return decode(m[1]); } catch (e) {}
+      try { var d = decode(m[1]); setCur(null); return d; } catch (e) {}
     }
     try {
       var raw = localStorage.getItem(DRAFT);
@@ -767,7 +817,169 @@ body{margin:0;background:var(--bg);color:var(--ink);
     $('#linkWarn').innerHTML = n > 2000
       ? ' <span class="warn">· 일부 메신저에서 잘릴 수 있습니다</span>' : '';
     if ($('#pv').classList.contains('on')) $('#pvFrame').src = u + '&nogate=1';
+    paintSrv();
   }
+
+  /* ── 서버 저장 · 발행 ──
+     저장은 로그인만 있으면 된다. 발행은 published_at 을 채우는 것이고,
+     결제(하위 프로젝트 4)가 오면 이 버튼 앞에 끼어든다. 여기 코드는 안 바뀐다. */
+  var ME = null;    // supabase user 또는 null
+
+  function shortUrl(){ return CUR ? dir() + 'invite.html?id=' + CUR.id : ''; }
+
+  function paintSrv(){
+    var out = $('#srvOut'), meta = $('#srvMeta');
+    if (!CUR) {
+      out.textContent = '저장하면 짧은 주소가 만들어집니다';
+      meta.textContent = ME ? '아직 서버에 저장하지 않았습니다.' : '아직 서버에 저장하지 않았습니다. 저장할 때 카카오 로그인을 묻습니다.';
+      $('#btnSave').textContent = '저장하고 짧은 주소 만들기';
+      $('#btnPublish').hidden = true; $('#btnCopyShort').hidden = true;
+      return;
+    }
+    out.textContent = shortUrl();
+    $('#btnSave').textContent = '지금 내용으로 다시 저장';
+    $('#btnCopyShort').hidden = false;
+    if (CUR.published_at) {
+      meta.textContent = '발행됨. 이 주소를 받은 하객에게 바로 열립니다.';
+      $('#btnPublish').hidden = true;
+    } else {
+      meta.textContent = '저장됨. 아직 발행 전이라 본인에게만 열립니다.';
+      $('#btnPublish').hidden = false;
+    }
+  }
+
+  function fail(e, fallback){
+    var m = (e && e.message) || '';
+    if (/INVITATION_LIMIT/.test(m)) return toast('청첩장은 계정당 20개까지입니다');
+    if (/JWT|session|Auth/i.test(m)) return toast('로그인이 풀렸습니다. 다시 로그인해 주세요');
+    toast(fallback);
+  }
+
+  function login(){
+    // 복귀 주소는 지금 페이지(쿼리 · 해시 없이). 초안은 localStorage 에 있어 왕복을 넘긴다.
+    return supa.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: { redirectTo: location.href.replace(/[?#].*$/, '') }
+    });
+  }
+
+  function save(){
+    if (!ME) {
+      try { localStorage.setItem(PENDING, 'save'); } catch (e) {}
+      toast('카카오 로그인 뒤 이어서 저장합니다');
+      return login();
+    }
+    var btn = $('#btnSave'); btn.disabled = true;
+    var p;
+    if (CUR) {
+      p = supa.from('invitations').update({ data: D }).eq('id', CUR.id).select('id, published_at').single();
+    } else {
+      p = insertNew(0);
+    }
+    return p.then(function(r){
+      if (r.error) throw r.error;
+      setCur({ id: r.data.id, published_at: r.data.published_at });
+      paintSrv(); listMine();
+      toast('저장했습니다');
+    }).catch(function(e){ fail(e, '저장하지 못했습니다'); })
+      .then(function(){ btn.disabled = false; });
+  }
+
+  // 8자 id 가 겹치면 3번까지 다시 뽑는다. 62⁸ 에서 3번 연속 충돌은 다른 고장이다 (스펙 §11).
+  function insertNew(attempt){
+    var id = newId();
+    return supa.from('invitations').insert({ id: id, data: D }).select('id, published_at').single()
+      .then(function(r){
+        if (r.error && r.error.code === '23505' && attempt < 2) return insertNew(attempt + 1);
+        return r;
+      });
+  }
+
+  function publish(){
+    if (!CUR || !ME) return;
+    var btn = $('#btnPublish'); btn.disabled = true;
+    supa.from('invitations').update({ published_at: new Date().toISOString() })
+      .eq('id', CUR.id).select('id, published_at').single()
+      .then(function(r){
+        if (r.error) throw r.error;
+        setCur({ id: r.data.id, published_at: r.data.published_at });
+        paintSrv(); listMine();
+        toast('발행했습니다. 하객에게 열립니다');
+      }).catch(function(e){ fail(e, '발행하지 못했습니다'); })
+        .then(function(){ btn.disabled = false; });
+  }
+
+  function listMine(){
+    var box = $('#mineList');
+    if (!ME) { box.innerHTML = ''; return; }
+    supa.from('invitations')
+      .select('id, published_at, updated_at, gn:data->g->>n, bn:data->b->>n')
+      .order('updated_at', { ascending: false })
+      .then(function(r){
+        if (r.error) { box.innerHTML = ''; return; }
+        box.innerHTML = r.data.map(function(x){
+          var cur = CUR && CUR.id === x.id;
+          return '<a class="add" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none"' +
+                 ' href="make.html?id=' + x.id + '">' +
+                 '<span>' + escapeHtml((x.gn || '') + ' · ' + (x.bn || '')) + (cur ? ' <small>(지금)</small>' : '') + '</span>' +
+                 '<small>' + (x.published_at ? '발행' : '저장') + ' · ' + x.updated_at.slice(0, 10) + '</small></a>';
+        }).join('') || '<div class="meta">저장한 청첩장이 없습니다</div>';
+      });
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+
+  function paintMe(){
+    var out = $('#meOut');
+    if (ME) {
+      var nick = (ME.user_metadata && (ME.user_metadata.name || ME.user_metadata.preferred_username)) || '카카오 사용자';
+      out.textContent = nick + ' 님으로 로그인했습니다.';
+      $('#btnLogin').hidden = true; $('#btnLogout').hidden = false;
+    } else {
+      out.textContent = '로그인하지 않았습니다. 저장할 때 카카오 로그인을 묻습니다.';
+      $('#btnLogin').hidden = false; $('#btnLogout').hidden = true;
+    }
+    paintSrv(); listMine();
+  }
+
+  /* ?id= 로 들어왔다. 내 행을 받아 D 와 CUR 로. 세션이 있어야 한다 — RLS 가 소유자만 돌려준다. */
+  function openMine(id){
+    return supa.from('invitations').select('id, data, published_at').eq('id', id).single()
+      .then(function(r){
+        if (r.error || !r.data) { toast('그 청첩장을 열 수 없습니다'); return; }
+        D = r.data.data;
+        setCur({ id: r.data.id, published_at: r.data.published_at });
+        fillForm(); growAll(); apply();
+      });
+  }
+
+  $('#btnSave').addEventListener('click', save);
+  $('#btnPublish').addEventListener('click', publish);
+  $('#btnCopyShort').addEventListener('click', function(){
+    if (!navigator.clipboard || !navigator.clipboard.writeText) { toast('복사가 막혔습니다. 위 주소를 직접 선택해 주세요'); return; }
+    navigator.clipboard.writeText(shortUrl()).then(
+      function(){ toast('짧은 주소를 복사했습니다'); },
+      function(){ toast('복사가 막혔습니다. 위 주소를 직접 선택해 주세요'); });
+  });
+  $('#btnLogin').addEventListener('click', function(){ login(); });
+  $('#btnLogout').addEventListener('click', function(){
+    supa.auth.signOut().then(function(){ setCur(null); ME = null; paintMe(); toast('로그아웃했습니다'); });
+  });
+
+  // 세션이 바뀔 때마다 — 첫 로드 · OAuth 복귀 · 로그아웃 — 화면을 맞춘다
+  supa.auth.onAuthStateChange(function(event, session){
+    ME = session ? session.user : null;
+    paintMe();
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (/[?&]code=/.test(location.search)) {
+        // PKCE 복귀. 주소에서 code 를 지운다 — 새로고침하면 쓰고 난 code 로 또 교환하려 한다
+        history.replaceState(null, '', location.pathname + (QID ? '?id=' + QID : '') + location.hash);
+      }
+      var pending = '';
+      try { pending = localStorage.getItem(PENDING) || ''; localStorage.removeItem(PENDING); } catch (e) {}
+      if (ME && QID && !CUR) openMine(QID);
+      else if (ME && pending === 'save') save();
+    }
+  });
 
   /* ── 미리보기 ── */
   function openPv(){
@@ -813,6 +1025,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
   $('#btnReset').addEventListener('click', function(){
     D = JSON.parse(JSON.stringify(DEFAULTS));
     try { localStorage.removeItem(DRAFT); } catch (e) {}
+    setCur(null);
     // 주소에 #d= 가 남아 있으면 새로고침할 때 되살아난다
     if (location.hash) history.replaceState(null, '', location.pathname);
     fillForm(); apply(); toast('처음값으로 되돌렸습니다');
@@ -830,6 +1043,9 @@ body{margin:0;background:var(--bg);color:var(--ink);
   });
   var _renderTl = renderTl;
   renderTl = function(){ _renderTl(); growAll(); };
+
+  // make.html?id= 로 왔는데 기기에 남은 CUR 이 다른 행이면 CUR 을 버린다. 세션이 오면 openMine 이 받는다.
+  if (QID && (!CUR || CUR.id !== QID)) setCur(null);
 
   fillForm();
   growAll();
