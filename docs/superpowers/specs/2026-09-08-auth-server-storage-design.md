@@ -1,7 +1,12 @@
 # 계정 · 서버 저장 · 짧은 주소 — 설계
 
-작성 2026-09-08. 이 문서는 **하위 프로젝트 1**의 스펙이다.
+작성 2026-09-08, 개정 2026-10-04. 이 문서는 **하위 프로젝트 1**의 스펙이다.
 갤러리와 방명록은 이 위에 올라타므로 여기서 다루지 않는다.
+
+> **2026-10-04 개정.** 세 가지가 정해졌다. ① 인프라는 **무료 플랜으로 고정**한다.
+> Pro 전환은 계획에 없다 (§9). ② **결제를 붙인다.** 그래서 호스팅이 GitHub Pages 에서
+> **Cloudflare Pages** 로 옮겨간다 (§9-1). ③ 서버 코드(Edge Functions)는 결제에서만 쓴다 (§3).
+> 결제 자체는 [`2026-10-04-payment-design.md`](2026-10-04-payment-design.md) 에 따로 적었다.
 
 ---
 
@@ -39,17 +44,26 @@ README 「남은 것」 넷 중 **둘이 여기서 한 번에 풀린다.**
 | **1** | **계정 + 서버저장 + 짧은 주소** | **이 문서** |
 | 2 | 갤러리 — 밴드 3장 교체 | 설계 일부 완료 (§10) |
 | 3 | 방명록 · 참석 여부 서버 저장 | 미착수 |
-| 4 | 격자 갤러리 + 라이트박스 | 보류 — §10 |
+| 4 | **결제 — 발행을 유료로** | [설계](2026-10-04-payment-design.md) |
+| 5 | 카카오톡 공유 SDK | 미착수 |
+| — | 격자 갤러리 + 라이트박스 | 보류 — §10 |
+
+결제가 4번인 이유는 간단하다. **팔 물건이 먼저 있어야 한다.** 짧은 주소(1), 사진(2),
+응답 수집(3)이 없는 청첩장에 돈을 받을 수는 없다. 다만 사업자등록과 PG 가입은
+심사 대기가 있으므로 서류는 1번과 같이 시작한다.
 
 ---
 
 ## 3. 아키텍처
 
 ```
+[호스팅]  Cloudflare Pages — 정적 3장. 요청·대역폭 무제한, 무료     ← §9-1
+
 [제작]
   카카오 로그인 ──▶ make.html ──▶ invitations (Postgres, jsonb)
                       │
-                      └──▶ 내 청첩장 목록
+                      ├──▶ 내 청첩장 목록
+                      └──▶ 「발행」 ──▶ (하위 프로젝트 4) Edge Function ──▶ 토스 승인
 
 [열람]
   하객 (로그인 없음) ──▶ invite.html?id=k3n9x2
@@ -61,6 +75,12 @@ README 「남은 것」 넷 중 **둘이 여기서 한 번에 풀린다.**
 
 빌드는 계속 없다. Supabase 클라이언트는 CDN ESM으로 붙인다.
 `README`가 "빌드가 없는 단일 HTML 파일"을 내세우고 있어 여기서 깨지 않는다.
+
+**이 문서의 범위에는 서버 코드가 없다.** 공개 조회는 RPC, 쓰기 권한은 RLS,
+로그인은 Auth, 사진은 Storage 가 맡는다. 전부 Supabase 가 이미 제공하는 것이라
+클라이언트에서 직접 부른다. Edge Function 이 필요한 곳은 **시크릿 키를 써야 하는
+결제 승인뿐**이고, 그건 하위 프로젝트 4다. 백엔드가 없다는 뜻이 아니라
+**백엔드가 곧 Supabase** 라는 뜻이다.
 
 ## 4. 데이터 모델
 
@@ -74,11 +94,12 @@ create table profiles (
 );
 
 create table invitations (
-  id         text primary key,                 -- 8자 base62
-  owner      uuid not null references auth.users on delete cascade,
-  data       jsonb not null,                   -- 지금 #d= 에 담기던 객체 그대로
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  id           text primary key,               -- 8자 base62
+  owner        uuid not null references auth.users on delete cascade,
+  data         jsonb not null,                 -- 지금 #d= 에 담기던 객체 그대로
+  published_at timestamptz,                    -- null 이면 미발행. 결제가 이 값을 채운다
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
 );
 
 create index on invitations (owner, updated_at desc);
@@ -97,6 +118,12 @@ for each row execute function touch_updated_at();
 
 `id`는 8자 base62다. 62⁸ = 2.2×10¹⁴ 이라 추측으로 못 맞힌다.
 클라이언트가 `crypto.getRandomValues`로 만들고, 충돌하면 다시 만든다.
+
+**`published_at` 은 결제보다 먼저 넣는다.** 저장과 발행을 처음부터 가른다.
+저장은 로그인만 하면 되고, 발행은 「발행」 버튼이 `published_at` 을 채우는 것이다.
+하위 프로젝트 4가 오기 전까지 그 버튼은 무료이고, 결제가 붙으면 버튼 앞에
+결제가 끼어들 뿐이다. 나중에 컬럼을 추가하면 이미 뿌려진 `?id=` 를
+전부 발행 처리하는 마이그레이션이 필요한데, 처음부터 있으면 그 일이 없다.
 
 ### 지금 넣지 않는 것
 
@@ -121,12 +148,16 @@ revoke all on invitations from anon;
 create function get_invitation(p_id text)
 returns jsonb language sql stable security definer
 set search_path = public as $$
-  select data from invitations where id = p_id;
+  select data from invitations
+  where id = p_id
+    and (published_at is not null or owner = auth.uid());
 $$;
 grant execute on function get_invitation(text) to anon, authenticated;
 ```
 
 `id`를 정확히 아는 사람만 그 한 건을 가져간다. 열거가 불가능하다.
+**미발행 청첩장은 소유자에게만 돌아간다.** 하객이 미발행 주소를 열면 null 이고,
+`invite.html` 은 "아직 발행되지 않은 청첩장입니다"를 보여 준다.
 
 나머지 정책:
 
@@ -243,21 +274,83 @@ OAuth 는 페이지를 떠났다 돌아오므로 초안이 `localStorage` 에 �
 
 전에는 사진만 깨졌겠지만 이제 **청첩장 자체가 안 열린다.**
 포트폴리오 데모는 몇 주씩 아무도 안 들어오는 것이 정상이라 현실적인 위험이다.
+정지돼도 1년 안에는 복구되고 데이터는 남지만, 그 사이에 링크를 연 하객은 깨진 화면을 본다.
 
-**GitHub Actions 크론으로 주 1회 핑을 때린다.** 워크플로 파일 하나다.
+처음 안은 **GitHub Actions 크론으로 주 1회 핑**이었다. 두 군데가 구멍이다.
+
+- Supabase 는 "지난 일주일 동안 **매일** 몇 번의 DB 요청"을 활동으로 본다. 주 1회는 경계선이다.
+- **공개 저장소의 예약 워크플로는 저장소 활동이 60일 없으면 자동 비활성화된다.**
+  포트폴리오는 커밋이 끊기는 것이 정상이라 정확히 이 조건에 걸린다.
+  핑이 멈추고 7일 뒤 DB 가 멈추는데, 그걸 알려 주는 것도 없다.
+
+그래서 둘을 겹친다.
+
+| 수단 | 주기 | 역할 |
+|---|---|---|
+| 외부 크론 (UptimeRobot · cron-job.org, 무료) | 5분~1일 | `/auth/v1/health` 핑. 저장소와 무관하고 **죽으면 알림이 온다** |
+| 비공개 백업 저장소의 GitHub Actions (④) | 매일 | 같은 핑을 이중으로. **비공개 저장소에는 60일 규칙이 없다** |
+
 선택이 아니라 이 설계의 필수 구성요소다.
 
-## 9. 운영
+### ④ 백업이 없다
 
-| 항목 | 값 | 근거 |
+Free 는 백업 미포함, 로그 보존 1일이다. 남의 전화번호와 계좌번호를 들고 있는데
+되돌릴 수단이 없다. 테이블을 잘못 지우면 그걸로 끝이다.
+
+**주 1회 `pg_dump` 를 뜬다.** GitHub Actions 러너는 IPv6 가 안 되므로
+직결이 아니라 **Supavisor 세션 풀러(IPv4) 주소**로 붙는다.
+
+덤프에는 개인정보가 통째로 들어 있다. **공개 저장소의 Actions 아티팩트에 두면 안 된다.**
+공개 저장소의 아티팩트는 읽기 권한만 있으면, 즉 GitHub 계정만 있으면 누구나 내려받는다.
+**워크플로 자체를 비공개 백업 저장소에 두고** 거기에 덤프를 커밋한다.
+③의 핑도 같은 워크플로에 얹는다. 비공개라 60일 규칙에 안 걸리고, 매주 커밋이 생긴다.
+
+## 9. 운영 — 무료 플랜 고정
+
+**Pro 전환은 계획에 없다.** 아래는 전부 Free 한도이고, 이 프로젝트가 닿을 숫자가 아니다.
+
+| 항목 | Free 한도 | 이 프로젝트 |
 |---|---|---|
-| 티어 | **Free 로 시작** | `claudedocs/storage-cost.md` 4차 |
-| DB | 500MB | 청첩장 1건 jsonb 3KB → 사실상 안 닿는다 |
-| 활성 프로젝트 | 2개 | 프로젝트를 가르지 않는 또 하나의 이유 |
+| DB | 500MB | 청첩장 1건 jsonb 3KB → 16만 건 |
+| 파일 저장 | 1GB | 밴드 3장 90KB → 1.1만 건 (하위 프로젝트 2) |
+| 이그레스 | 5GB + 캐시 5GB | 월 250~500건 (`storage-cost.md` 6장) |
+| 인증 MAU | 5만 | |
+| Edge Functions | 월 50만 회 | 결제 승인 건당 2~3회 (하위 프로젝트 4) |
+| 활성 프로젝트 | 2개 | 1개. 프로젝트를 가르지 않는 또 하나의 이유 |
 | 계정당 청첩장 | 20개 | 트리거 |
-| 가용성 | 주간 핑 워크플로 | §8-③ |
 
-한도에 닿으면 Pro($25/월)로 올린다. **코드는 바뀌지 않는다.**
+한도가 아니라 **없는 것**이 Free 의 진짜 제약이다.
+
+| 없는 것 | 대비 |
+|---|---|
+| 상시 가동 | 외부 크론 + 비공개 저장소 워크플로 — §8-③ |
+| 백업 | 주 1회 `pg_dump` 를 비공개 저장소에 — §8-④ |
+| 로그 (1일) | 결제는 로그 대신 `payments` 테이블에 기록 — 결제 설계 §5 |
+| 커스텀 도메인 | 카카오 로그인이 `<ref>.supabase.co` 로 돌아온다. 보이는 주소일 뿐 기능 문제는 아니다. 대신 프로젝트 ref 가 바뀌면 카카오 Redirect URI 를 다시 등록해야 하므로 §6 의 「프로젝트 하나」 규칙이 더 중요해진다 |
+
+### 9-1. 호스팅 — Cloudflare Pages
+
+**GitHub Pages 는 결제가 붙는 순간 약관 위반이다.** "온라인 비즈니스, 이커머스,
+상거래가 주목적인 사이트" 운영을 금지한다. Vercel Hobby 도 비상업 전용이라 대안이 못 된다.
+
+**Cloudflare Pages Free 로 옮긴다.** 정적 자산은 요청·대역폭 제한이 없고,
+빌드 월 500회이고, 상업 이용 제한이 없다. `onnit.co.kr` 의 네임서버가 **이미 Cloudflare 에 있어서**
+커스텀 도메인을 추가하면 DNS 레코드를 Cloudflare 가 직접 바꾼다.
+비용 문서가 "R2 는 네임서버를 옮겨야 한다"고 적었던 진입 비용은 이미 치러져 있었다.
+
+바뀌는 동작은 하나다. Pages 는 `/invite.html` 을 `/invite` 로 308 리다이렉트한다.
+이미 뿌려진 `invite.html#d=…` 링크는 fragment 와 query 가 리다이렉트를 넘어 살아남으므로
+깨지지 않고 한 번 더 튈 뿐이다. `make.html` 이 만드는 주소와 OG 태그는 `/invite` 로 바꾼다.
+
+**순서가 중요하다.** 저장소 쪽을 먼저 정리하면 Cloudflare 가 받기 전에 GitHub Pages 의
+도메인이 풀려 사이트가 잠깐 죽는다.
+
+1. Cloudflare 대시보드에서 Pages 프로젝트를 만들고 GitHub 저장소를 연결한다. 빌드 명령 없음, 출력 디렉터리 루트
+2. 그 프로젝트에 `wedding.onnit.co.kr` 을 커스텀 도메인으로 추가한다. 이때 DNS 가 넘어간다
+3. 열리는 것을 확인한 뒤 `CNAME` 과 `.nojekyll` 을 지우고, GitHub 저장소 설정에서 Pages 를 끄고, README 의 배포 설명을 고친다
+
+Cloudflare 는 새 프로젝트에 Workers 정적 자산을 함께 내세우지만, 빌드 없는 정적 3장에는
+Pages 가 더 단순하고 정적 요청 요금은 둘 다 무료로 같다. 필요해지면 옮기는 문서가 있다.
 
 ## 10. 범위 밖
 
@@ -270,6 +363,9 @@ OAuth 는 페이지를 떠났다 돌아오므로 초안이 `localStorage` 에 �
 로그인 사용자로 제한되고, 소유는 `auth.uid()` 로 풀리므로 22자 키 모델과 함께
 그 전제도 폐기한다. 30일 TTL 은 오용 방어가 아니라 **비용 관리** 항목으로만
 다시 검토한다 — 하위 프로젝트 2에서 정한다.
+
+**결제.** 하위 프로젝트 4. [별도 문서](2026-10-04-payment-design.md).
+이 문서가 미리 깔아 두는 것은 `published_at` 컬럼과 저장/발행의 분리뿐이다 (§4, §5).
 
 **방명록 · 참석 여부.** 하위 프로젝트 3. `invite.html` 의 `read()`/`write()`
 두 함수와 폼 `submit` 핸들러가 저장 경계 전부라는 사실은 그대로다.
@@ -284,3 +380,7 @@ OAuth 는 페이지를 떠났다 돌아오므로 초안이 `localStorage` 에 �
 - **대표 도메인에 `wedding.onnit.co.kr` 등록**이 필요하다.
 - 8자 base62 충돌 시 재시도는 **3회까지**, 그 뒤에는 저장 실패로 알린다.
   62⁸ 공간에서 3회 연속 충돌은 사실상 일어나지 않으므로 이때는 다른 고장을 의심한다.
+- **Cloudflare Pages 프로젝트 생성과 도메인 연결**도 계정 소유자 몫이다 (§9-1). 저장소 정리는 그 뒤다.
+- **비공개 백업 저장소**를 하나 만들어야 한다 (§8-④). 핑과 덤프 워크플로가 거기 산다.
+- **외부 크론 계정** (UptimeRobot 등) 하나. 알림 받을 연락처를 정한다.
+- 사업자등록과 토스페이먼츠 가입은 결제 설계의 「확인이 필요한 것」에 있다. 심사 대기 때문에 지금 시작한다.
