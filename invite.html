@@ -10,6 +10,12 @@
 <meta property="og:description" content="2027년 4월 17일 토요일 오후 1시 · 라온 컨벤션 5층 그랜드홀">
 <meta property="og:locale" content="ko_KR">
 <meta name="twitter:card" content="summary">
+<script>
+/* ?id= 로 들어오면 서버에서 받을 때까지 본문을 가린다.
+   기본값(강태윤 · 윤채원)이 먼저 보이면 남의 이름이 뜨는 셈이라, 그리기 전에 막는다 (스펙 §8-①). */
+if (/[?&]id=/.test(location.search)) { document.documentElement.className += ' wait'; document.title = '청첩장'; }
+</script>
+<script src="js/config.js"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%232F5D57'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,6 +23,16 @@
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <style>
+/* ?id= 로딩 중. <head> 의 인라인 스크립트가 html.wait 를 붙이고, 데이터가 오면 start() 가 뗀다 */
+html.wait body > *:not(#load):not(#toast){visibility:hidden}
+#load{display:none;position:fixed;inset:0;z-index:50;flex-direction:column;align-items:center;
+  justify-content:center;gap:16px;padding:24px;text-align:center;background:#FFFFFF;color:var(--ink)}
+html.wait #load{display:flex}
+#load p{font-size:.95rem;line-height:1.7;color:var(--ink-2)}
+#load button{display:none;height:var(--tap);padding:0 20px;border:1px solid var(--line-2);
+  border-radius:3px;background:#FFFFFF;font:inherit;font-size:.9rem;color:var(--ink)}
+#load.err p{color:var(--ink)}
+#load.err button{display:inline-block}
 /* ════════════════════════════════════════
    이 청첩장의 테마.
 
@@ -789,6 +805,10 @@ body{
   </div>
 </div>
 
+<div id="load" aria-live="polite">
+  <p id="loadMsg">청첩장을 불러오는 중입니다</p>
+  <button type="button" id="loadRetry">다시 시도</button>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 <script>
@@ -855,6 +875,18 @@ body{
     return out;
   }
 
+  /* ─────────── 저장소 (막혀 있어도 죽지 않게) ─────────── */
+  function read(key, fallback){
+    try {
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
+  }
+  function write(key, val){
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+    catch (e) { return false; }
+  }
+
   /* 주소의 #d= 를 읽는다. base64url → JSON */
   function fromHash(){
     try {
@@ -869,7 +901,57 @@ body{
     } catch (e) { return null; }
   }
 
-  var D = deepMerge(DEFAULTS, fromHash());
+  /* ─────────── 어디서 데이터를 받나 ───────────
+     ?id=   → 서버 RPC 한 건. 라이브러리 없이 fetch 다. 하객 경로에 의존성을 더하지 않는다.
+     #d=    → 주소에서 디코드. 유지.
+     없음   → 기본 데모. Supabase 를 아예 타지 않는다.
+     아래 본문 전체는 start(D) 안에 들어간다. 들여쓰기는 일부러 안 바꿨다 — diff 를 읽을 수 있게. */
+  var ID = (location.search.match(/[?&]id=([A-Za-z0-9]{8})(?:&|$)/) || [])[1] || '';
+  var CACHE = 'onnit-inv-' + ID;
+
+  function fetchInvitation(id){
+    return fetch(window.ONNIT.SUPABASE_URL + '/rest/v1/rpc/get_invitation', {
+      method: 'POST',
+      headers: { 'apikey': window.ONNIT.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_id: id })
+    }).then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();                       // 발행본이면 data 객체, 아니면 null
+    });
+  }
+
+  function loadFail(msg){
+    var box = document.getElementById('load');
+    document.getElementById('loadMsg').textContent = msg;
+    box.classList.add('err');
+    document.title = '청첩장';
+  }
+
+  if (!ID) {
+    start(deepMerge(DEFAULTS, fromHash()));
+  } else {
+    var cached = read(CACHE, null);
+    if (cached) start(deepMerge(DEFAULTS, cached));   // 재방문은 캐시로 즉시
+    document.getElementById('loadRetry').addEventListener('click', function(){ location.reload(); });
+    fetchInvitation(ID).then(function(data){
+      if (data === null) {
+        if (!cached) loadFail('아직 발행되지 않았거나 없는 청첩장입니다');
+        return;
+      }
+      write(CACHE, data);
+      if (!cached) {
+        start(deepMerge(DEFAULTS, data));
+      } else if (JSON.stringify(cached) !== JSON.stringify(data)) {
+        // 내용이 바뀌었다. 한 번만 다시 그린다 — 두 번째 로드는 캐시와 같으므로 여기 안 온다.
+        location.reload();
+      }
+    }, function(){
+      if (!cached) loadFail('청첩장을 불러오지 못했습니다');
+    });
+  }
+
+  function start(D){
+  document.documentElement.classList.remove('wait');
 
   /* 주소의 #d= 만 바뀌면 브라우저는 새로고침하지 않는다.
      제작 페이지의 미리보기(iframe)가 갱신되도록 직접 다시 읽는다. */
@@ -889,18 +971,6 @@ body{
 
   var $  = function(s){ return document.querySelector(s); };
   var $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
-
-  /* ─────────── 저장소 (막혀 있어도 죽지 않게) ─────────── */
-  function read(key, fallback){
-    try {
-      var raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (e) { return fallback; }
-  }
-  function write(key, val){
-    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
-    catch (e) { return false; }
-  }
 
   /* ─────────── 토스트 ─────────── */
   var toastEl = $('#toast'), toastTimer;
@@ -1512,8 +1582,13 @@ body{
      ?to= 는 해시 앞에 와야 한다. 물음표가 # 뒤에 오면 검색 문자열이 아니라
      해시의 일부가 된다. 그래서 붙이는 자리를 인자로 받는다. */
   function baseUrl(query){
-    return location.origin + location.pathname +
-           (query ? '?' + query : '') + location.hash;
+    // ?id= 는 데리고 가고, ?to= 는 뗀다. 맞춤 링크를 받은 사람이 다시 공유할 때
+    // 자기 이름이 딸려 가면 안 된다. 인자로 온 쿼리가 있으면 그 위에 얹는다.
+    var p = new URLSearchParams(location.search);
+    p.delete('to');
+    if (query) new URLSearchParams(query).forEach(function(v, k){ p.set(k, v); });
+    var s = p.toString();
+    return location.origin + location.pathname + (s ? '?' + s : '') + location.hash;
   }
   $('#shareLink').addEventListener('click', function(){
     copyText(baseUrl()).then(
@@ -1584,6 +1659,7 @@ body{
       fail('주소가 길어 QR 코드로 담기지 않습니다');
     }
   })();
+  }  // start(D)
 })();
 </script>
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>청첩장 만들기</title>
-<meta name="description" content="로그인 없이 만드는 모바일 청첩장. 일곱 단계를 채우면 청첩장 주소가 만들어집니다.">
+<meta name="description" content="모바일 청첩장 만들기. 일곱 단계를 채우면 주소가 만들어지고, 카카오 로그인으로 저장하면 짧은 주소가 생깁니다.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%232F5D57'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,6 +12,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ════════════════════════════════════════
    제작 도구의 테마.
@@ -28,6 +30,7 @@
   --ink-4:#B4B8C0;                    /* 플레이스홀더. 청첩장엔 없는 단계다 */
   --jade-p:#26504A;                   /* 눌림 상태 */
   --jade-line:#B9D2CC;
+  --kakao:#FEE500; --on-kakao:rgba(0,0,0,.85); --kakao-sym:#000;  /* 카카오 디자인 가이드 고정값. 테마 색이 아니라 상수다 */
   --danger:#A8453F; --danger-wash:#FBEDEC;
   --r:12px; --r-s:9px;                /* 앱의 라운드. 청첩장은 종이라 2~3px를 쓴다 */
   --bar:calc(64px + var(--safe-b));
@@ -81,6 +84,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .hint-top{background:var(--jade-wash);border-radius:var(--r);padding:14px 16px;
   font-size:.83rem;color:var(--jade-p);line-height:1.75;margin-bottom:14px}
 .hint-top b{font-weight:500}
+.hint-top{word-break:keep-all}
 
 .grp{background:var(--card);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
 .grp > h2{padding:15px 16px 0;font-size:.9rem;font-weight:500;letter-spacing:-.01em;
@@ -169,13 +173,69 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .linkbox{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:14px}
 .linkbox h3{font-size:.86rem;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .linkbox h3 .b{width:4px;height:14px;border-radius:2px;background:var(--jade);display:block}
-.linkbox .url{background:var(--sunk);border-radius:var(--r-s);padding:12px 13px;
+.url{background:var(--sunk);border-radius:var(--r-s);padding:12px 13px;
   font-family:"Cormorant Garamond",serif;font-size:.8rem;color:var(--ink-2);
   line-height:1.6;word-break:break-all;max-height:88px;overflow:auto}
 .linkbox .meta{margin-top:10px;font-size:.78rem;color:var(--ink-3);display:flex;
   align-items:center;gap:6px;flex-wrap:wrap}
 .linkbox .meta b{font-family:"Cormorant Garamond",serif;color:var(--jade);font-weight:600}
 .linkbox .meta .warn{color:var(--danger)}
+
+/* ══════ 링크 탭 · 서버 카드 ══════
+   짧은 주소 · 내 청첩장은 버튼이 있는 카드라 다른 탭처럼 .grp > h2 + .in 을 쓴다.
+   .linkbox 는 주소를 보여 주기만 하는 카드로 남긴다.
+   처음엔 .linkbox 안에 버튼을 넣었다가 .grp .in 의 간격 규칙을 못 받아 버튼이 붙었다. */
+.grp .meta{font-size:.78rem;color:var(--ink-3);line-height:1.7;word-break:keep-all}
+.grp .meta b{color:var(--jade);font-weight:500}
+.grp > h3{padding:15px 16px 0;font-size:.86rem;font-weight:500;display:flex;align-items:center;gap:8px}
+.grp > h3 .b{width:4px;height:14px;border-radius:2px;background:var(--jade);display:block;flex:none}
+.grp > .url{margin:10px 16px 0}
+.grp > .meta{padding:8px 16px 0}
+
+/* 상태 표지. 카드 제목 줄 오른쪽 끝 */
+.st{margin-left:auto;flex:none;height:24px;padding:0 10px;border-radius:99px;
+  background:var(--sunk);color:var(--ink-3);font-size:.72rem;font-weight:400;
+  display:inline-flex;align-items:center}
+.st.on{background:var(--jade-wash);color:var(--jade);font-weight:500}
+
+/* 주소 + 복사 한 줄. break-all 을 풀어 id 8자가 쪼개지지 않게 한다 */
+.srv-url{display:flex;gap:8px}
+.srv-url .url{flex:1;min-width:0;min-height:var(--tap);display:flex;align-items:center;
+  font-size:.92rem;color:var(--ink);word-break:normal}
+.srv-url .btn.ghost{flex:none;padding:0 16px}
+
+/* 가로 버튼 줄. 하단 바와 같은 배치 — 보조 40% 왼쪽, 주요 오른쪽.
+   보이는 버튼이 하나면 줄을 다 쓴다. :has 를 못 읽으면 반반으로 물러난다 */
+.acts{display:flex;gap:9px}
+.acts .btn{flex:1}
+.acts .btn.ghost:has(~ .btn.fill:not([hidden])){flex:0 0 40%}
+
+/* 계정 줄. 로그아웃은 드물게 쓰니 글자 버튼으로 낮춘다.
+   터치 영역 48px 는 지키고 음수 여백으로 줄 높이만 글자에 맞춘다 */
+.me{display:flex;align-items:center;gap:12px}
+.me .meta{flex:1;min-width:0}
+.me .out{flex:none;height:var(--tap);margin:-12px 0;padding:0 2px;
+  font-size:.78rem;color:var(--ink-3);text-decoration:underline;text-underline-offset:3px}
+
+/* 카카오 로그인. 가이드 고정값(컨테이너 · 심볼 · 레이블 색, 라운드 12px) */
+.btn.kakao{background:var(--kakao);color:var(--on-kakao);border-radius:var(--r)}
+.btn.kakao svg{width:18px;height:18px;color:var(--kakao-sym)}
+.btn.kakao:active{filter:brightness(.96)}
+
+/* 내 청첩장 목록 */
+.mine{display:grid;gap:8px}
+.mine > .meta{padding:12px 14px;border:1px dashed var(--line-2);border-radius:var(--r-s);text-align:center}
+.mine-row{min-height:var(--tap);padding:0 14px;border-radius:var(--r-s);background:var(--sunk);
+  display:flex;align-items:center;gap:10px;font-size:.88rem;line-height:1.5;color:var(--ink);text-decoration:none}
+.mine-row .nm{flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mine-row em{flex:none;font-style:normal;font-size:.72rem;font-weight:500;color:var(--jade)}
+.mine-row .sub{flex:none;font-size:.76rem;color:var(--ink-3)}
+.mine-row .sub b{color:var(--jade);font-weight:500}
+.mine-row .sub .latin{font-size:.86rem}
+a.mine-row::after{content:"";flex:none;width:7px;height:7px;margin-left:2px;
+  border:solid var(--ink-4);border-width:1.5px 1.5px 0 0;transform:rotate(45deg)}
+a.mine-row:active{background:var(--bg)}
+.mine-row[aria-current="true"]{background:var(--jade-wash);box-shadow:inset 0 0 0 1px var(--jade-line)}
 
 /* .toast 와 prefers-reduced-motion 은 css/base.css 로 옮겼다.
    뜨는 높이는 위 :root 의 --toast-b 로 정한다. */
@@ -337,10 +397,44 @@ body{margin:0;background:var(--bg);color:var(--ink);
 
     <!-- ══ 06 링크 ══ -->
     <section class="panel" id="p7" role="tabpanel" aria-labelledby="tab-p7">
-      <div class="hint-top">서버에 저장하지 않습니다. 입력한 내용이 주소 안에 담기므로,
-        이 링크를 받은 사람은 바로 청첩장을 보게 됩니다.</div>
+      <div class="hint-top"><b>짧은 주소</b>는 카카오 로그인으로 저장하고 발행하면 하객에게 열립니다.
+        로그인 없이 보내려면 아래 <b>긴 주소</b>를 쓰세요.</div>
+
+      <div class="grp" id="srvBox">
+        <h2><span class="b"></span>짧은 주소<span class="st" id="srvSt">저장 전</span></h2>
+        <div class="in">
+          <div class="f">
+            <div class="srv-url" id="srvUrl" hidden>
+              <div class="url latin" id="srvOut"></div>
+              <button class="btn ghost" type="button" id="btnCopyShort" aria-label="짧은 주소 복사">복사</button>
+            </div>
+            <p class="meta" id="srvMeta" aria-live="polite">카카오 로그인을 거쳐 이 화면으로 돌아와 저장합니다.</p>
+          </div>
+          <div class="acts">
+            <button class="btn ghost" type="button" id="btnResave" hidden>다시 저장</button>
+            <button class="btn fill" type="button" id="btnSave">저장하고 짧은 주소 만들기</button>
+            <button class="btn fill" type="button" id="btnPublish" hidden>발행하기</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grp" id="meBox">
+        <h2><span class="b"></span>내 청첩장</h2>
+        <div class="in">
+          <div class="me">
+            <p class="meta" id="meOut">로그인하면 저장해 둔 청첩장 목록이 여기 나옵니다.</p>
+            <button class="out" type="button" id="btnLogout" hidden>로그아웃</button>
+          </div>
+          <button class="btn kakao" type="button" id="btnLogin">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.5c-5.25 0-9.5 3.33-9.5 7.44 0 2.66 1.78 4.99 4.46 6.3l-.9 3.32c-.08.29.25.52.5.36l3.95-2.6c.49.06.98.09 1.49.09 5.25 0 9.5-3.33 9.5-7.44S17.25 3.5 12 3.5Z"/></svg>
+            카카오 로그인
+          </button>
+          <div class="mine" id="mineList" hidden></div>
+        </div>
+      </div>
+
       <div class="linkbox">
-        <h3><span class="b"></span>청첩장 링크</h3>
+        <h3><span class="b"></span>긴 주소</h3>
         <div class="url latin" id="linkOut">주소를 만드는 중…</div>
         <div class="meta">주소 길이 <b id="linkLen">0</b>자<span id="linkWarn"></span></div>
       </div>
@@ -433,6 +527,33 @@ body{margin:0;background:var(--bg);color:var(--ink);
   var $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
 
   var DRAFT = 'onnit-make-draft-v1';
+  var CURKEY  = 'onnit-make-cur-v1';       // 지금 고치는 서버 행 { id, published_at }
+  var PENDING = 'onnit-make-pending-v1';   // 로그인 왕복 중에 보류한 동작. 'save' 하나뿐이다
+
+  /* supabase-js. UMD 라 window.supabase 로 온다. PKCE 라 복귀 주소가 ?code= 다 —
+     #d= 와 해시를 다투지 않는다. 세션은 localStorage 에 남아 새로고침을 넘긴다. */
+  var supa = window.supabase.createClient(window.ONNIT.SUPABASE_URL, window.ONNIT.SUPABASE_ANON_KEY, {
+    auth: { flowType: 'pkce', persistSession: true, detectSessionInUrl: true }
+  });
+
+  var CUR = null;
+  try { CUR = JSON.parse(localStorage.getItem(CURKEY) || 'null'); } catch (e) {}
+  function setCur(c){
+    CUR = c;
+    try { c ? localStorage.setItem(CURKEY, JSON.stringify(c)) : localStorage.removeItem(CURKEY); } catch (e) {}
+  }
+
+  /* 8자 base62. 62⁸ 이라 추측으로 못 맞힌다. 256 % 62 의 치우침은 248 이상을 버려서 없앤다. */
+  function newId(){
+    var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', out = '';
+    while (out.length < 8) {
+      var buf = new Uint8Array(16); crypto.getRandomValues(buf);
+      for (var i = 0; i < buf.length && out.length < 8; i++) if (buf[i] < 248) out += A[buf[i] % 62];
+    }
+    return out;
+  }
+
+  var QID = (location.search.match(/[?&]id=([A-Za-z0-9]{8})(?:&|$)/) || [])[1] || '';
 
   /* base64url → JSON. 청첩장 쪽 fromHash 와 같은 규칙을 읽는다. */
   function decode(b64){
@@ -457,7 +578,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
   function boot(){
     var m = (location.hash || '').match(/[#&]d=([^&]+)/);
     if (m) {
-      try { return decode(m[1]); } catch (e) {}
+      try { var d = decode(m[1]); setCur(null); return d; } catch (e) {}
     }
     try {
       var raw = localStorage.getItem(DRAFT);
@@ -767,7 +888,168 @@ body{margin:0;background:var(--bg);color:var(--ink);
     $('#linkWarn').innerHTML = n > 2000
       ? ' <span class="warn">· 일부 메신저에서 잘릴 수 있습니다</span>' : '';
     if ($('#pv').classList.contains('on')) $('#pvFrame').src = u + '&nogate=1';
+    paintSrv();
   }
+
+  /* ── 서버 저장 · 발행 ──
+     저장은 로그인만 있으면 된다. 발행은 published_at 을 채우는 것이고,
+     결제(하위 프로젝트 4)가 오면 이 버튼 앞에 끼어든다. 여기 코드는 안 바뀐다. */
+  var ME = null;    // supabase user 또는 null
+
+  function shortUrl(){ return CUR ? dir() + 'invite.html?id=' + CUR.id : ''; }
+
+  function paintSrv(){
+    var st = $('#srvSt'), meta = $('#srvMeta'), pub = !!(CUR && CUR.published_at);
+    $('#srvUrl').hidden = !CUR;
+    $('#srvOut').textContent = CUR ? shortUrl() : '';
+    $('#btnCopyShort').hidden = !pub;        // 발행 전 주소는 하객에게 안 열린다. 보내는 실수를 막는다
+    $('#btnSave').hidden = !!CUR;
+    $('#btnResave').hidden = !CUR;
+    $('#btnPublish').hidden = !CUR || pub;
+    st.textContent = !CUR ? '저장 전' : (pub ? '발행됨' : '발행 전');
+    st.classList.toggle('on', pub);
+    meta.textContent = !CUR
+      ? (ME ? '저장해도 발행하기 전에는 하객에게 열리지 않습니다.' : '카카오 로그인을 거쳐 이 화면으로 돌아와 저장합니다.')
+      : (pub ? '하객에게 열려 있습니다. 내용을 고친 뒤에는 다시 저장해야 반영됩니다.'
+             : '아직 하객에게 열리지 않습니다. 발행하면 이 주소로 열립니다.');
+  }
+
+  function fail(e, fallback){
+    var m = (e && e.message) || '';
+    if (/INVITATION_LIMIT/.test(m)) return toast('청첩장은 계정당 20개까지입니다');
+    if (/JWT|session|Auth/i.test(m)) return toast('로그인이 풀렸습니다. 다시 로그인해 주세요');
+    toast(fallback);
+  }
+
+  function login(){
+    // 복귀 주소는 지금 페이지(쿼리 · 해시 없이). 초안은 localStorage 에 있어 왕복을 넘긴다.
+    return supa.auth.signInWithOAuth({
+      provider: 'kakao',
+      // scope 는 지정하지 않는다. Supabase 가 account_email · profile_image · profile_nickname 을
+      // 기본으로 요청하고, options.scopes 는 거기에 덧붙을 뿐 빼지 못한다. 카카오 쪽에서
+      // 이메일 동의항목이 열려 있어야 한다 (비즈 앱). 플랜의 「KOE205 함정」 참고.
+      options: { redirectTo: location.href.replace(/[?#].*$/, '') }
+    });
+  }
+
+  function save(){
+    if (!ME) {
+      try { localStorage.setItem(PENDING, 'save'); } catch (e) {}
+      toast('카카오 로그인 뒤 이어서 저장합니다');
+      return login();
+    }
+    var btns = [$('#btnSave'), $('#btnResave')]; btns.forEach(function(b){ b.disabled = true; });
+    var p;
+    if (CUR) {
+      p = supa.from('invitations').update({ data: D }).eq('id', CUR.id).select('id, published_at').single();
+    } else {
+      p = insertNew(0);
+    }
+    return p.then(function(r){
+      if (r.error) throw r.error;
+      setCur({ id: r.data.id, published_at: r.data.published_at });
+      paintSrv(); listMine();
+      toast('저장했습니다');
+    }).catch(function(e){ fail(e, '저장하지 못했습니다'); })
+      .then(function(){ btns.forEach(function(b){ b.disabled = false; }); });
+  }
+
+  // 8자 id 가 겹치면 3번까지 다시 뽑는다. 62⁸ 에서 3번 연속 충돌은 다른 고장이다 (스펙 §11).
+  function insertNew(attempt){
+    var id = newId();
+    return supa.from('invitations').insert({ id: id, data: D }).select('id, published_at').single()
+      .then(function(r){
+        if (r.error && r.error.code === '23505' && attempt < 2) return insertNew(attempt + 1);
+        return r;
+      });
+  }
+
+  function publish(){
+    if (!CUR || !ME) return;
+    var btn = $('#btnPublish'); btn.disabled = true;
+    // 저장한 뒤 고친 내용이 발행본에 빠지지 않게 data 를 함께 보낸다
+    supa.from('invitations').update({ data: D, published_at: new Date().toISOString() })
+      .eq('id', CUR.id).select('id, published_at').single()
+      .then(function(r){
+        if (r.error) throw r.error;
+        setCur({ id: r.data.id, published_at: r.data.published_at });
+        paintSrv(); listMine();
+        toast('발행했습니다. 하객에게 열립니다');
+      }).catch(function(e){ fail(e, '발행하지 못했습니다'); })
+        .then(function(){ btn.disabled = false; });
+  }
+
+  function listMine(){
+    var box = $('#mineList');
+    if (!ME) { box.innerHTML = ''; return; }
+    box.innerHTML = '<p class="meta">불러오는 중입니다.</p>';
+    supa.from('invitations')
+      .select('id, published_at, updated_at, gn:data->g->>n, bn:data->b->>n')
+      .order('updated_at', { ascending: false })
+      .then(function(r){
+        if (r.error) { box.innerHTML = '<p class="meta">목록을 불러오지 못했습니다.</p>'; return; }
+        if (!r.data.length) { box.innerHTML = '<p class="meta">아직 저장한 청첩장이 없습니다.</p>'; return; }
+        box.innerHTML = r.data.map(function(x){
+          var nm  = '<span class="nm">' + escapeHtml((x.gn || '') + ' · ' + (x.bn || '')) + '</span>';
+          var day = '<span class="latin">' + x.updated_at.slice(0, 10).replace(/-/g, '.') + '</span>';
+          var sub = '<span class="sub">' + (x.published_at ? '<b>발행됨</b>' : '발행 전') + ' · ' + day + '</span>';
+          if (CUR && CUR.id === x.id) {
+            // 지금 고치는 행은 링크가 아니다. 눌러서 다시 불러오면 로컬에서 고친 내용이 덮인다
+            return '<div class="mine-row" aria-current="true">' + nm + '<em>편집 중</em>' + sub + '</div>';
+          }
+          return '<a class="mine-row" href="make.html?id=' + x.id + '">' + nm + sub + '</a>';
+        }).join('');
+      });
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+
+  function paintMe(){
+    var out = $('#meOut');
+    if (ME) {
+      var nick = (ME.user_metadata && (ME.user_metadata.name || ME.user_metadata.preferred_username)) || '카카오 사용자';
+      out.textContent = nick + ' 님으로 로그인했습니다.';
+    } else {
+      out.textContent = '로그인하면 저장해 둔 청첩장 목록이 여기 나옵니다.';
+    }
+    $('#btnLogin').hidden = !!ME; $('#btnLogout').hidden = !ME; $('#mineList').hidden = !ME;
+    paintSrv(); listMine();
+  }
+
+  /* ?id= 로 들어왔다. 내 행을 받아 D 와 CUR 로. 세션이 있어야 한다 — RLS 가 소유자만 돌려준다. */
+  function openMine(id){
+    return supa.from('invitations').select('id, data, published_at').eq('id', id).single()
+      .then(function(r){
+        if (r.error || !r.data) { toast('그 청첩장을 열 수 없습니다'); return; }
+        D = r.data.data;
+        setCur({ id: r.data.id, published_at: r.data.published_at });
+        fillForm(); growAll(); apply();
+      });
+  }
+
+  $('#btnSave').addEventListener('click', save);
+  $('#btnResave').addEventListener('click', save);
+  $('#btnPublish').addEventListener('click', publish);
+  $('#btnCopyShort').addEventListener('click', function(){ copy(shortUrl(), '짧은 주소를 복사했습니다'); });
+  $('#btnLogin').addEventListener('click', function(){ login(); });
+  $('#btnLogout').addEventListener('click', function(){
+    supa.auth.signOut().then(function(){ setCur(null); ME = null; paintMe(); toast('로그아웃했습니다'); });
+  });
+
+  // 세션이 바뀔 때마다 — 첫 로드 · OAuth 복귀 · 로그아웃 — 화면을 맞춘다
+  supa.auth.onAuthStateChange(function(event, session){
+    ME = session ? session.user : null;
+    paintMe();
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (/[?&]code=/.test(location.search)) {
+        // PKCE 복귀. 주소에서 code 를 지운다 — 새로고침하면 쓰고 난 code 로 또 교환하려 한다
+        history.replaceState(null, '', location.pathname + (QID ? '?id=' + QID : '') + location.hash);
+      }
+      var pending = '';
+      try { pending = localStorage.getItem(PENDING) || ''; localStorage.removeItem(PENDING); } catch (e) {}
+      if (ME && QID && !CUR) openMine(QID);
+      else if (ME && pending === 'save') save();
+    }
+  });
 
   /* ── 미리보기 ── */
   function openPv(){
@@ -789,16 +1071,20 @@ body{margin:0;background:var(--bg);color:var(--ink);
   });
 
   /* ── 복사 · 열기 ── */
-  function copyUrl(){
-    var u = url();
-    function ok(){ toast('청첩장 링크를 복사했습니다'); }
+  function copy(u, okMsg){
     function no(){ toast('복사가 막혔습니다. 링크 탭에서 직접 선택해 주세요'); }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(u).then(ok, no);
+      navigator.clipboard.writeText(u).then(function(){ toast(okMsg); }, no);
     } else { no(); }
   }
+  // 하단 바. 발행한 뒤에는 하객에게 보낼 주소가 짧은 주소이므로 그걸 복사한다.
+  // 긴 주소 카드의 버튼(#btnCopy2)은 언제나 긴 주소다.
+  function copyUrl(){
+    var pub = CUR && CUR.published_at;
+    copy(pub ? shortUrl() : url(), pub ? '짧은 주소를 복사했습니다' : '청첩장 링크를 복사했습니다');
+  }
   $('#btnCopy').addEventListener('click', copyUrl);
-  $('#btnCopy2').addEventListener('click', copyUrl);
+  $('#btnCopy2').addEventListener('click', function(){ copy(url(), '긴 주소를 복사했습니다'); });
   $('#btnCopyEdit').addEventListener('click', function(){
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
       toast('복사가 막혔습니다. 위 주소를 직접 선택해 주세요'); return;
@@ -813,6 +1099,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
   $('#btnReset').addEventListener('click', function(){
     D = JSON.parse(JSON.stringify(DEFAULTS));
     try { localStorage.removeItem(DRAFT); } catch (e) {}
+    setCur(null);
     // 주소에 #d= 가 남아 있으면 새로고침할 때 되살아난다
     if (location.hash) history.replaceState(null, '', location.pathname);
     fillForm(); apply(); toast('처음값으로 되돌렸습니다');
@@ -830,6 +1117,9 @@ body{margin:0;background:var(--bg);color:var(--ink);
   });
   var _renderTl = renderTl;
   renderTl = function(){ _renderTl(); growAll(); };
+
+  // make.html?id= 로 왔는데 기기에 남은 CUR 이 다른 행이면 CUR 을 버린다. 세션이 오면 openMine 이 받는다.
+  if (QID && (!CUR || CUR.id !== QID)) setCur(null);
 
   fillForm();
   growAll();

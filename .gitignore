@@ -6,3 +6,7 @@ node_modules/
 # 수집한 참고 스크린샷 (5MB, 로컬 참고용)
 claudedocs/samples/
 .superpowers/
+
+# 비밀값. 공개값은 js/config.js
+.env
+supabase/.temp/

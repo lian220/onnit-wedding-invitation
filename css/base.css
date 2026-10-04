@@ -43,3 +43,6 @@ body{overflow-wrap:break-word}
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* hidden 속성은 어떤 display 보다 세다. .btn 의 display:flex 가 이기던 것을 바로잡는다. */
+[hidden]{display:none!important}
