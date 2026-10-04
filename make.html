@@ -30,6 +30,7 @@
   --ink-4:#B4B8C0;                    /* 플레이스홀더. 청첩장엔 없는 단계다 */
   --jade-p:#26504A;                   /* 눌림 상태 */
   --jade-line:#B9D2CC;
+  --kakao:#FEE500; --on-kakao:rgba(0,0,0,.85); --kakao-sym:#000;  /* 카카오 디자인 가이드 고정값. 테마 색이 아니라 상수다 */
   --danger:#A8453F; --danger-wash:#FBEDEC;
   --r:12px; --r-s:9px;                /* 앱의 라운드. 청첩장은 종이라 2~3px를 쓴다 */
   --bar:calc(64px + var(--safe-b));
@@ -83,6 +84,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .hint-top{background:var(--jade-wash);border-radius:var(--r);padding:14px 16px;
   font-size:.83rem;color:var(--jade-p);line-height:1.75;margin-bottom:14px}
 .hint-top b{font-weight:500}
+.hint-top{word-break:keep-all}
 
 .grp{background:var(--card);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
 .grp > h2{padding:15px 16px 0;font-size:.9rem;font-weight:500;letter-spacing:-.01em;
@@ -171,13 +173,69 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .linkbox{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:14px}
 .linkbox h3{font-size:.86rem;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .linkbox h3 .b{width:4px;height:14px;border-radius:2px;background:var(--jade);display:block}
-.linkbox .url{background:var(--sunk);border-radius:var(--r-s);padding:12px 13px;
+.url{background:var(--sunk);border-radius:var(--r-s);padding:12px 13px;
   font-family:"Cormorant Garamond",serif;font-size:.8rem;color:var(--ink-2);
   line-height:1.6;word-break:break-all;max-height:88px;overflow:auto}
 .linkbox .meta{margin-top:10px;font-size:.78rem;color:var(--ink-3);display:flex;
   align-items:center;gap:6px;flex-wrap:wrap}
 .linkbox .meta b{font-family:"Cormorant Garamond",serif;color:var(--jade);font-weight:600}
 .linkbox .meta .warn{color:var(--danger)}
+
+/* ══════ 링크 탭 · 서버 카드 ══════
+   짧은 주소 · 내 청첩장은 버튼이 있는 카드라 다른 탭처럼 .grp > h2 + .in 을 쓴다.
+   .linkbox 는 주소를 보여 주기만 하는 카드로 남긴다.
+   처음엔 .linkbox 안에 버튼을 넣었다가 .grp .in 의 간격 규칙을 못 받아 버튼이 붙었다. */
+.grp .meta{font-size:.78rem;color:var(--ink-3);line-height:1.7;word-break:keep-all}
+.grp .meta b{color:var(--jade);font-weight:500}
+.grp > h3{padding:15px 16px 0;font-size:.86rem;font-weight:500;display:flex;align-items:center;gap:8px}
+.grp > h3 .b{width:4px;height:14px;border-radius:2px;background:var(--jade);display:block;flex:none}
+.grp > .url{margin:10px 16px 0}
+.grp > .meta{padding:8px 16px 0}
+
+/* 상태 표지. 카드 제목 줄 오른쪽 끝 */
+.st{margin-left:auto;flex:none;height:24px;padding:0 10px;border-radius:99px;
+  background:var(--sunk);color:var(--ink-3);font-size:.72rem;font-weight:400;
+  display:inline-flex;align-items:center}
+.st.on{background:var(--jade-wash);color:var(--jade);font-weight:500}
+
+/* 주소 + 복사 한 줄. break-all 을 풀어 id 8자가 쪼개지지 않게 한다 */
+.srv-url{display:flex;gap:8px}
+.srv-url .url{flex:1;min-width:0;min-height:var(--tap);display:flex;align-items:center;
+  font-size:.92rem;color:var(--ink);word-break:normal}
+.srv-url .btn.ghost{flex:none;padding:0 16px}
+
+/* 가로 버튼 줄. 하단 바와 같은 배치 — 보조 40% 왼쪽, 주요 오른쪽.
+   보이는 버튼이 하나면 줄을 다 쓴다. :has 를 못 읽으면 반반으로 물러난다 */
+.acts{display:flex;gap:9px}
+.acts .btn{flex:1}
+.acts .btn.ghost:has(~ .btn.fill:not([hidden])){flex:0 0 40%}
+
+/* 계정 줄. 로그아웃은 드물게 쓰니 글자 버튼으로 낮춘다.
+   터치 영역 48px 는 지키고 음수 여백으로 줄 높이만 글자에 맞춘다 */
+.me{display:flex;align-items:center;gap:12px}
+.me .meta{flex:1;min-width:0}
+.me .out{flex:none;height:var(--tap);margin:-12px 0;padding:0 2px;
+  font-size:.78rem;color:var(--ink-3);text-decoration:underline;text-underline-offset:3px}
+
+/* 카카오 로그인. 가이드 고정값(컨테이너 · 심볼 · 레이블 색, 라운드 12px) */
+.btn.kakao{background:var(--kakao);color:var(--on-kakao);border-radius:var(--r)}
+.btn.kakao svg{width:18px;height:18px;color:var(--kakao-sym)}
+.btn.kakao:active{filter:brightness(.96)}
+
+/* 내 청첩장 목록 */
+.mine{display:grid;gap:8px}
+.mine > .meta{padding:12px 14px;border:1px dashed var(--line-2);border-radius:var(--r-s);text-align:center}
+.mine-row{min-height:var(--tap);padding:0 14px;border-radius:var(--r-s);background:var(--sunk);
+  display:flex;align-items:center;gap:10px;font-size:.88rem;line-height:1.5;color:var(--ink);text-decoration:none}
+.mine-row .nm{flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mine-row em{flex:none;font-style:normal;font-size:.72rem;font-weight:500;color:var(--jade)}
+.mine-row .sub{flex:none;font-size:.76rem;color:var(--ink-3)}
+.mine-row .sub b{color:var(--jade);font-weight:500}
+.mine-row .sub .latin{font-size:.86rem}
+a.mine-row::after{content:"";flex:none;width:7px;height:7px;margin-left:2px;
+  border:solid var(--ink-4);border-width:1.5px 1.5px 0 0;transform:rotate(45deg)}
+a.mine-row:active{background:var(--bg)}
+.mine-row[aria-current="true"]{background:var(--jade-wash);box-shadow:inset 0 0 0 1px var(--jade-line)}
 
 /* .toast 와 prefers-reduced-motion 은 css/base.css 로 옮겼다.
    뜨는 높이는 위 :root 의 --toast-b 로 정한다. */
@@ -339,31 +397,44 @@ body{margin:0;background:var(--bg);color:var(--ink);
 
     <!-- ══ 06 링크 ══ -->
     <section class="panel" id="p7" role="tabpanel" aria-labelledby="tab-p7">
-      <div class="hint-top">주소가 둘입니다. <b>긴 주소</b>는 내용이 주소 안에 담겨 서버 없이 열립니다.
-        <b>짧은 주소</b>는 카카오로 로그인해 서버에 저장하면 만들어지고, 발행해야 하객에게 열립니다.</div>
-      <div class="linkbox" id="srvBox">
-        <h3><span class="b"></span>짧은 주소</h3>
-        <div class="url latin" id="srvOut">저장하면 짧은 주소가 만들어집니다</div>
-        <div class="meta" id="srvMeta">아직 서버에 저장하지 않았습니다.</div>
-        <div class="in" style="margin-top:12px;padding:0">
-          <button class="btn fill" type="button" id="btnSave" style="width:100%">저장하고 짧은 주소 만들기</button>
-          <button class="btn ghost" type="button" id="btnPublish" style="width:100%;flex:none" hidden>발행하기 — 하객에게 열립니다</button>
-          <button class="btn ghost" type="button" id="btnCopyShort" style="width:100%;flex:none" hidden>짧은 주소 복사</button>
+      <div class="hint-top"><b>짧은 주소</b>는 카카오 로그인으로 저장하고 발행하면 하객에게 열립니다.
+        로그인 없이 보내려면 아래 <b>긴 주소</b>를 쓰세요.</div>
+
+      <div class="grp" id="srvBox">
+        <h2><span class="b"></span>짧은 주소<span class="st" id="srvSt">저장 전</span></h2>
+        <div class="in">
+          <div class="f">
+            <div class="srv-url" id="srvUrl" hidden>
+              <div class="url latin" id="srvOut"></div>
+              <button class="btn ghost" type="button" id="btnCopyShort" aria-label="짧은 주소 복사">복사</button>
+            </div>
+            <p class="meta" id="srvMeta" aria-live="polite">카카오 로그인을 거쳐 이 화면으로 돌아와 저장합니다.</p>
+          </div>
+          <div class="acts">
+            <button class="btn ghost" type="button" id="btnResave" hidden>다시 저장</button>
+            <button class="btn fill" type="button" id="btnSave">저장하고 짧은 주소 만들기</button>
+            <button class="btn fill" type="button" id="btnPublish" hidden>발행하기</button>
+          </div>
         </div>
       </div>
 
       <div class="grp" id="meBox">
-        <h2><span class="b"></span>내 계정</h2>
+        <h2><span class="b"></span>내 청첩장</h2>
         <div class="in">
-          <div class="meta" id="meOut">로그인하지 않았습니다. 저장할 때 카카오 로그인을 묻습니다.</div>
-          <button class="btn ghost" type="button" id="btnLogin" style="width:100%;flex:none">카카오로 로그인</button>
-          <button class="btn ghost" type="button" id="btnLogout" style="width:100%;flex:none" hidden>로그아웃</button>
-          <div id="mineList" style="display:grid;gap:8px"></div>
+          <div class="me">
+            <p class="meta" id="meOut">로그인하면 저장해 둔 청첩장 목록이 여기 나옵니다.</p>
+            <button class="out" type="button" id="btnLogout" hidden>로그아웃</button>
+          </div>
+          <button class="btn kakao" type="button" id="btnLogin">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.5c-5.25 0-9.5 3.33-9.5 7.44 0 2.66 1.78 4.99 4.46 6.3l-.9 3.32c-.08.29.25.52.5.36l3.95-2.6c.49.06.98.09 1.49.09 5.25 0 9.5-3.33 9.5-7.44S17.25 3.5 12 3.5Z"/></svg>
+            카카오 로그인
+          </button>
+          <div class="mine" id="mineList" hidden></div>
         </div>
       </div>
 
       <div class="linkbox">
-        <h3><span class="b"></span>청첩장 링크</h3>
+        <h3><span class="b"></span>긴 주소</h3>
         <div class="url latin" id="linkOut">주소를 만드는 중…</div>
         <div class="meta">주소 길이 <b id="linkLen">0</b>자<span id="linkWarn"></span></div>
       </div>
@@ -828,24 +899,19 @@ body{margin:0;background:var(--bg);color:var(--ink);
   function shortUrl(){ return CUR ? dir() + 'invite.html?id=' + CUR.id : ''; }
 
   function paintSrv(){
-    var out = $('#srvOut'), meta = $('#srvMeta');
-    if (!CUR) {
-      out.textContent = '저장하면 짧은 주소가 만들어집니다';
-      meta.textContent = ME ? '아직 서버에 저장하지 않았습니다.' : '아직 서버에 저장하지 않았습니다. 저장할 때 카카오 로그인을 묻습니다.';
-      $('#btnSave').textContent = '저장하고 짧은 주소 만들기';
-      $('#btnPublish').hidden = true; $('#btnCopyShort').hidden = true;
-      return;
-    }
-    out.textContent = shortUrl();
-    $('#btnSave').textContent = '지금 내용으로 다시 저장';
-    $('#btnCopyShort').hidden = false;
-    if (CUR.published_at) {
-      meta.textContent = '발행됨. 이 주소를 받은 하객에게 바로 열립니다.';
-      $('#btnPublish').hidden = true;
-    } else {
-      meta.textContent = '저장됨. 아직 발행 전이라 본인에게만 열립니다.';
-      $('#btnPublish').hidden = false;
-    }
+    var st = $('#srvSt'), meta = $('#srvMeta'), pub = !!(CUR && CUR.published_at);
+    $('#srvUrl').hidden = !CUR;
+    $('#srvOut').textContent = CUR ? shortUrl() : '';
+    $('#btnCopyShort').hidden = !pub;        // 발행 전 주소는 하객에게 안 열린다. 보내는 실수를 막는다
+    $('#btnSave').hidden = !!CUR;
+    $('#btnResave').hidden = !CUR;
+    $('#btnPublish').hidden = !CUR || pub;
+    st.textContent = !CUR ? '저장 전' : (pub ? '발행됨' : '발행 전');
+    st.classList.toggle('on', pub);
+    meta.textContent = !CUR
+      ? (ME ? '저장해도 발행하기 전에는 하객에게 열리지 않습니다.' : '카카오 로그인을 거쳐 이 화면으로 돌아와 저장합니다.')
+      : (pub ? '하객에게 열려 있습니다. 내용을 고친 뒤에는 다시 저장해야 반영됩니다.'
+             : '아직 하객에게 열리지 않습니다. 발행하면 이 주소로 열립니다.');
   }
 
   function fail(e, fallback){
@@ -869,7 +935,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
       toast('카카오 로그인 뒤 이어서 저장합니다');
       return login();
     }
-    var btn = $('#btnSave'); btn.disabled = true;
+    var btns = [$('#btnSave'), $('#btnResave')]; btns.forEach(function(b){ b.disabled = true; });
     var p;
     if (CUR) {
       p = supa.from('invitations').update({ data: D }).eq('id', CUR.id).select('id, published_at').single();
@@ -882,7 +948,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
       paintSrv(); listMine();
       toast('저장했습니다');
     }).catch(function(e){ fail(e, '저장하지 못했습니다'); })
-      .then(function(){ btn.disabled = false; });
+      .then(function(){ btns.forEach(function(b){ b.disabled = false; }); });
   }
 
   // 8자 id 가 겹치면 3번까지 다시 뽑는다. 62⁸ 에서 3번 연속 충돌은 다른 고장이다 (스펙 §11).
@@ -898,7 +964,8 @@ body{margin:0;background:var(--bg);color:var(--ink);
   function publish(){
     if (!CUR || !ME) return;
     var btn = $('#btnPublish'); btn.disabled = true;
-    supa.from('invitations').update({ published_at: new Date().toISOString() })
+    // 저장한 뒤 고친 내용이 발행본에 빠지지 않게 data 를 함께 보낸다
+    supa.from('invitations').update({ data: D, published_at: new Date().toISOString() })
       .eq('id', CUR.id).select('id, published_at').single()
       .then(function(r){
         if (r.error) throw r.error;
@@ -912,18 +979,23 @@ body{margin:0;background:var(--bg);color:var(--ink);
   function listMine(){
     var box = $('#mineList');
     if (!ME) { box.innerHTML = ''; return; }
+    box.innerHTML = '<p class="meta">불러오는 중입니다.</p>';
     supa.from('invitations')
       .select('id, published_at, updated_at, gn:data->g->>n, bn:data->b->>n')
       .order('updated_at', { ascending: false })
       .then(function(r){
-        if (r.error) { box.innerHTML = ''; return; }
+        if (r.error) { box.innerHTML = '<p class="meta">목록을 불러오지 못했습니다.</p>'; return; }
+        if (!r.data.length) { box.innerHTML = '<p class="meta">아직 저장한 청첩장이 없습니다.</p>'; return; }
         box.innerHTML = r.data.map(function(x){
-          var cur = CUR && CUR.id === x.id;
-          return '<a class="add" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none"' +
-                 ' href="make.html?id=' + x.id + '">' +
-                 '<span>' + escapeHtml((x.gn || '') + ' · ' + (x.bn || '')) + (cur ? ' <small>(지금)</small>' : '') + '</span>' +
-                 '<small>' + (x.published_at ? '발행' : '저장') + ' · ' + x.updated_at.slice(0, 10) + '</small></a>';
-        }).join('') || '<div class="meta">저장한 청첩장이 없습니다</div>';
+          var nm  = '<span class="nm">' + escapeHtml((x.gn || '') + ' · ' + (x.bn || '')) + '</span>';
+          var day = '<span class="latin">' + x.updated_at.slice(0, 10).replace(/-/g, '.') + '</span>';
+          var sub = '<span class="sub">' + (x.published_at ? '<b>발행됨</b>' : '발행 전') + ' · ' + day + '</span>';
+          if (CUR && CUR.id === x.id) {
+            // 지금 고치는 행은 링크가 아니다. 눌러서 다시 불러오면 로컬에서 고친 내용이 덮인다
+            return '<div class="mine-row" aria-current="true">' + nm + '<em>편집 중</em>' + sub + '</div>';
+          }
+          return '<a class="mine-row" href="make.html?id=' + x.id + '">' + nm + sub + '</a>';
+        }).join('');
       });
   }
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
@@ -933,11 +1005,10 @@ body{margin:0;background:var(--bg);color:var(--ink);
     if (ME) {
       var nick = (ME.user_metadata && (ME.user_metadata.name || ME.user_metadata.preferred_username)) || '카카오 사용자';
       out.textContent = nick + ' 님으로 로그인했습니다.';
-      $('#btnLogin').hidden = true; $('#btnLogout').hidden = false;
     } else {
-      out.textContent = '로그인하지 않았습니다. 저장할 때 카카오 로그인을 묻습니다.';
-      $('#btnLogin').hidden = false; $('#btnLogout').hidden = true;
+      out.textContent = '로그인하면 저장해 둔 청첩장 목록이 여기 나옵니다.';
     }
+    $('#btnLogin').hidden = !!ME; $('#btnLogout').hidden = !ME; $('#mineList').hidden = !ME;
     paintSrv(); listMine();
   }
 
@@ -953,13 +1024,9 @@ body{margin:0;background:var(--bg);color:var(--ink);
   }
 
   $('#btnSave').addEventListener('click', save);
+  $('#btnResave').addEventListener('click', save);
   $('#btnPublish').addEventListener('click', publish);
-  $('#btnCopyShort').addEventListener('click', function(){
-    if (!navigator.clipboard || !navigator.clipboard.writeText) { toast('복사가 막혔습니다. 위 주소를 직접 선택해 주세요'); return; }
-    navigator.clipboard.writeText(shortUrl()).then(
-      function(){ toast('짧은 주소를 복사했습니다'); },
-      function(){ toast('복사가 막혔습니다. 위 주소를 직접 선택해 주세요'); });
-  });
+  $('#btnCopyShort').addEventListener('click', function(){ copy(shortUrl(), '짧은 주소를 복사했습니다'); });
   $('#btnLogin').addEventListener('click', function(){ login(); });
   $('#btnLogout').addEventListener('click', function(){
     supa.auth.signOut().then(function(){ setCur(null); ME = null; paintMe(); toast('로그아웃했습니다'); });
@@ -1001,16 +1068,20 @@ body{margin:0;background:var(--bg);color:var(--ink);
   });
 
   /* ── 복사 · 열기 ── */
-  function copyUrl(){
-    var u = url();
-    function ok(){ toast('청첩장 링크를 복사했습니다'); }
+  function copy(u, okMsg){
     function no(){ toast('복사가 막혔습니다. 링크 탭에서 직접 선택해 주세요'); }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(u).then(ok, no);
+      navigator.clipboard.writeText(u).then(function(){ toast(okMsg); }, no);
     } else { no(); }
   }
+  // 하단 바. 발행한 뒤에는 하객에게 보낼 주소가 짧은 주소이므로 그걸 복사한다.
+  // 긴 주소 카드의 버튼(#btnCopy2)은 언제나 긴 주소다.
+  function copyUrl(){
+    var pub = CUR && CUR.published_at;
+    copy(pub ? shortUrl() : url(), pub ? '짧은 주소를 복사했습니다' : '청첩장 링크를 복사했습니다');
+  }
   $('#btnCopy').addEventListener('click', copyUrl);
-  $('#btnCopy2').addEventListener('click', copyUrl);
+  $('#btnCopy2').addEventListener('click', function(){ copy(url(), '긴 주소를 복사했습니다'); });
   $('#btnCopyEdit').addEventListener('click', function(){
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
       toast('복사가 막혔습니다. 위 주소를 직접 선택해 주세요'); return;
