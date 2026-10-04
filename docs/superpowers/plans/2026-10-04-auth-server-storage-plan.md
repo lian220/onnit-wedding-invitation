@@ -23,8 +23,8 @@
 | 2 RLS 테스트 | ✅ | SQL Editor 에서 11개 단언 통과. 실패 단언으로 결과창이 현재 실행을 반영함도 확인 |
 | 3 `js/config.js` | ✅ | publishable 키 `sb_publishable_kEc9…` |
 | 4 `invite.html` | ✅ | `?id=` · `#d=` · `?to=` 로컬 검증. 발행본 열람은 Task 6 로그인 뒤 |
-| 5 카카오 · Auth | ◐ | 카카오 앱 `ONNIT 청첩장`(ID 1597191) 등록. 새 콘솔 구조: Redirect URI 와 Client Secret 은 **[앱] > [플랫폼 키] > REST API 키 > 더보기 > 수정** 에 있다(시크릿은 발급 시 기본 ON). 카카오 로그인 ON, 동의항목 닉네임 필수 · 프로필 사진 선택. Supabase 쪽 Site URL · Redirect URLs · 스위치 둘 켬. **남은 것: REST API 키와 Client Secret 을 Supabase 에 붙여넣고 Save** — 사용자가 한다 |
-| 6 `make.html` | ◐ | 코드 들어감. 디자인 리뷰(expert-ui-ux-designer) 반영: `.grp > h2 + .in` 구조, 상태 표지, 상태마다 주요 버튼 하나, 카카오 버튼 가이드, 목록 행. 로그인 왕복 검증만 남음 |
+| 5 카카오 · Auth | ✅ | 카카오 앱 `ONNIT 청첩장`(ID 1597191). **개인 개발자 비즈 앱**으로 전환(아이콘 등록 → 전환 버튼, 본인인증·약관은 계정에 이미 돼 있어 즉시 완료). 동의항목 닉네임 필수 · 프로필 사진 선택 · **카카오계정(이메일) 선택** — 이게 없으면 KOE205. 새 콘솔 경로: Redirect URI 와 Client Secret 은 **[앱] > [플랫폼 키] > REST API 키 > 더보기 > 수정**. Supabase 는 Site URL · Redirect URLs · provider(사용자가 키 입력) · email optional ON |
+| 6 `make.html` | ✅ | 로그인 왕복 검증 완료: 저장 → 카카오 동의 → `?code=` 복귀(주소 정리됨) → 보류 저장 이어짐 → 짧은 주소 `?id=` → 미발행 시 하객에게 "아직 발행되지 않았거나 없는 청첩장" → 발행 → 하객 화면에 서버 데이터 렌더 → `&to=` 맞춤 링크 → 캐시 → 새로고침 후 상태 유지. 디자인은 리뷰 반영. **빠진 것: 목록에서 삭제 UI 없음** (RLS 정책은 있다) |
 | 7 운영 | ⬜ | |
 | 8 호스팅 | ⬜ | |
 | 9 문서 | ⬜ | |
