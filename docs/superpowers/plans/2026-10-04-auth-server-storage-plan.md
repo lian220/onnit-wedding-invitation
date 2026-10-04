@@ -26,7 +26,7 @@
 | 5 카카오 · Auth | ✅ | 카카오 앱 `ONNIT 청첩장`(ID 1597191). **개인 개발자 비즈 앱**으로 전환(아이콘 등록 → 전환 버튼, 본인인증·약관은 계정에 이미 돼 있어 즉시 완료). 동의항목 닉네임 필수 · 프로필 사진 선택 · **카카오계정(이메일) 선택** — 이게 없으면 KOE205. 새 콘솔 경로: Redirect URI 와 Client Secret 은 **[앱] > [플랫폼 키] > REST API 키 > 더보기 > 수정**. Supabase 는 Site URL · Redirect URLs · provider(사용자가 키 입력) · email optional ON |
 | 6 `make.html` | ✅ | 로그인 왕복 검증 완료: 저장 → 카카오 동의 → `?code=` 복귀(주소 정리됨) → 보류 저장 이어짐 → 짧은 주소 `?id=` → 미발행 시 하객에게 "아직 발행되지 않았거나 없는 청첩장" → 발행 → 하객 화면에 서버 데이터 렌더 → `&to=` 맞춤 링크 → 캐시 → 새로고침 후 상태 유지. 디자인은 리뷰 반영. **빠진 것: 목록에서 삭제 UI 없음** (RLS 정책은 있다) |
 | 7 운영 | ⬜ | **백업은 사용자 결정으로 뺐다 (2026-10-04).** 남는 것은 일시정지 방지 핑 하나 — UptimeRobot 무료 모니터가 `get_invitation` RPC 를 5분마다 부른다. 비공개 저장소 · pg_dump 는 하지 않는다 |
-| 8 호스팅 | ◐ | 아직 GitHub Pages. `main` 을 push 해 **운영(wedding.onnit.co.kr)에서 같은 왕복을 검증했다** — 로그인 · 저장 `?id=1f65LV1C` · 미발행 차단 · 발행 · 하객 렌더. Cloudflare Pages 이전은 결제 전까지 하면 된다 |
+| 8 호스팅 | ✅ | Cloudflare Pages 프로젝트 `onnit-wedding`, 커스텀 도메인 `wedding.onnit.co.kr` 컷오버, GitHub Pages 끔, `CNAME`·`.nojekyll` 삭제. **함정 둘**: ① Cloudflare GitHub 앱이 "선택한 저장소만"이라 공개 저장소는 복제만 되고 push 이벤트가 안 와 자동 배포가 안 됐다 → GitHub 앱 설치 설정에서 저장소 추가. ② `404.html` 이 없으면 없는 경로에 index.html 을 200 으로 내준다 → `404.html` 추가 |
 | 9 문서 | ⬜ | |
 
 **운영 검증 (2026-10-04 밤).** 하위 프로젝트 1 을 `main` 에 머지하고 push 했다. 운영에서 카카오 로그인 왕복과 저장 · 발행 · 열람이 로컬과 같이 동작한다. 테스트로 발행한 청첩장 두 건(`GenFS8zH` 로컬, `1f65LV1C` 운영)이 DB 에 남아 있다 — 삭제 UI 가 없어 Table Editor 에서 지운다.
