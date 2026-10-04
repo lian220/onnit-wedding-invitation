@@ -14,6 +14,25 @@
 
 ---
 
+## 진행 상황 — 2026-10-04 저녁
+
+| Task | 상태 | 메모 |
+|---|---|---|
+| 0 Supabase 프로젝트 | ✅ | **새 계정**(GitHub `onnitadmin-beep`, org `ONNIT`)에 `onnit` · Seoul · Free. ref `ehzcybacnnhtyikrpsiy`. DB 비밀번호는 대시보드가 생성했고 기록 안 함 — CLI link 전에 Settings → Database 에서 재설정 |
+| 1 스키마 | ✅ | SQL Editor 로 적용. CLI 를 link 하면 `migration repair --status applied 20261004000000` 한 번 |
+| 2 RLS 테스트 | ✅ | SQL Editor 에서 11개 단언 통과. 실패 단언으로 결과창이 현재 실행을 반영함도 확인 |
+| 3 `js/config.js` | ✅ | publishable 키 `sb_publishable_kEc9…` |
+| 4 `invite.html` | ✅ | `?id=` · `#d=` · `?to=` 로컬 검증. 발행본 열람은 Task 6 로그인 뒤 |
+| 5 카카오 · Auth | ◐ | Site URL · Redirect URLs(`localhost:8080/**`, `wedding.onnit.co.kr/**`) 등록함. **provider 는 미정** — 카카오 앱 등록 vs Google 로 먼저 |
+| 6 `make.html` | ◐ | 코드 들어감. 저장 버튼이 Supabase 인가 주소까지 가는 것 확인. 로그인 왕복 검증은 provider 뒤. **디자인 리뷰 반영 예정** |
+| 7 운영 | ⬜ | |
+| 8 호스팅 | ⬜ | |
+| 9 문서 | ⬜ | |
+
+**옆길로 샌 것.** 처음에 CLI 가 기존 계정에 로그인돼 있어 그 계정 org 에 `onnit`(ref `llacbdnibhewmpsiaglk`)을 만들었다가 새 계정으로 다시 했다. 그 프로젝트는 스키마만 있고 비어 있다. 지울지는 사용자 결정. 리포의 `.env` 와 `supabase/.temp` 는 아직 그 옛 프로젝트를 가리킨다.
+
+**브라우저 캐시 함정.** `css/base.css` 가 9월 8일 이후 안 바뀌어 Chrome 휴리스틱 캐시가 며칠간 옛 파일을 썼다. 로컬에서 CSS 가 안 바뀌어 보이면 `fetch('css/base.css',{cache:'reload'})` 뒤 새로고침.
+
 ## 파일 구조
 
 | 파일 | 책임 |
