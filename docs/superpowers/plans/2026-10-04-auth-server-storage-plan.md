@@ -25,7 +25,7 @@
 | 4 `invite.html` | ✅ | `?id=` · `#d=` · `?to=` 로컬 검증. 발행본 열람은 Task 6 로그인 뒤 |
 | 5 카카오 · Auth | ✅ | 카카오 앱 `ONNIT 청첩장`(ID 1597191). **개인 개발자 비즈 앱**으로 전환(아이콘 등록 → 전환 버튼, 본인인증·약관은 계정에 이미 돼 있어 즉시 완료). 동의항목 닉네임 필수 · 프로필 사진 선택 · **카카오계정(이메일) 선택** — 이게 없으면 KOE205. 새 콘솔 경로: Redirect URI 와 Client Secret 은 **[앱] > [플랫폼 키] > REST API 키 > 더보기 > 수정**. Supabase 는 Site URL · Redirect URLs · provider(사용자가 키 입력) · email optional ON |
 | 6 `make.html` | ✅ | 로그인 왕복 검증 완료: 저장 → 카카오 동의 → `?code=` 복귀(주소 정리됨) → 보류 저장 이어짐 → 짧은 주소 `?id=` → 미발행 시 하객에게 "아직 발행되지 않았거나 없는 청첩장" → 발행 → 하객 화면에 서버 데이터 렌더 → `&to=` 맞춤 링크 → 캐시 → 새로고침 후 상태 유지. 디자인은 리뷰 반영. **빠진 것: 목록에서 삭제 UI 없음** (RLS 정책은 있다) |
-| 7 운영 | 🔶 | **백업은 사용자 결정으로 뺐다 (2026-10-04).** 핑은 UptimeRobot 대신 **Cloudflare Worker 크론** `ops/keepalive` (계정이 하나 더 필요 없어서). 워커 작성 · `tsc` · 드라이런 · 로컬 크론 호출로 운영 Supabase 200 확인. 남은 것: 대시보드에서 Workers Builds 연결 (Step 5–6) |
+| 7 운영 | ✅ | **백업은 사용자 결정으로 뺐다 (2026-10-04).** 핑은 UptimeRobot 대신 **Cloudflare Worker 크론** `onnit-keepalive` (리포 `ops/keepalive`, 계정이 하나 더 필요 없어서). Workers Builds 가 Root directory `ops/keepalive` · watch path `ops/keepalive/*` 로 push 마다 배포. 첫 빌드 18초, 첫 틱 22:17:41 KST 성공(에러 0). **메일 알림은 없다** — 붙이는 법은 스펙 §11 · `ops/keepalive/README.md`. 함정: 대시보드에서 글자를 칠 때 입력칸 포커스를 먼저 확인 — `/` 가 빠른 검색 단축키다 |
 | 8 호스팅 | ✅ | Cloudflare Pages 프로젝트 `onnit-wedding`, 커스텀 도메인 `wedding.onnit.co.kr` 컷오버, GitHub Pages 끔, `CNAME`·`.nojekyll` 삭제. **함정 둘**: ① Cloudflare GitHub 앱이 "선택한 저장소만"이라 공개 저장소는 복제만 되고 push 이벤트가 안 와 자동 배포가 안 됐다 → GitHub 앱 설치 설정에서 저장소 추가. ② `404.html` 이 없으면 없는 경로에 index.html 을 200 으로 내준다 → `404.html` 추가 |
 | 9 문서 | ✅ | README 저장 절 · 「남은 것」 · 「돌아올 자리」, 랜딩 메타 · 리드 · 카드 01/02 · 한계 둘, 스펙 세 줄(UMD · 핑 · `.html`) + §8-③ · §11 을 워커 크론으로 |
 
@@ -1066,9 +1066,9 @@ curl "http://localhost:8787/__scheduled?cron=17+*+*+*+*"
 Expected: `Ran scheduled event`, dev 로그에 `{"cron":"17 * * * *","ok":true,"status":200}`.
 이 요청은 운영 Supabase 를 실제로 때린다 — 그게 목적이다.
 
-- [ ] **Step 4: 커밋 · push**
+- [x] **Step 4: 커밋 · push** — `4578c8d`
 
-- [ ] **Step 5: Cloudflare 대시보드에서 저장소 연결 (Workers Builds, 무료 — 월 3,000분)**
+- [x] **Step 5: Cloudflare 대시보드에서 저장소 연결 (Workers Builds, 무료 — 월 3,000분)** — 2026-10-04 21:49 첫 빌드 18초 성공
 
 Workers & Pages → Create → Workers 탭 → **Import a repository** → `lian220/onnit-wedding-invitation`
 (GitHub 앱은 Task 8 때 이 저장소에 이미 접근 권한이 있다) →
@@ -1084,7 +1084,7 @@ Workers & Pages → Create → Workers 탭 → **Import a repository** → `lian
 → Deploy. 첫 빌드가 끝나면 Settings → Build → **Build watch paths** 에 include `ops/keepalive/*` 를 넣는다.
 안 넣으면 사이트 파일만 바뀐 push 에도 워커 빌드가 돈다. 해롭진 않고 분만 쓴다.
 
-- [ ] **Step 6: 확인**
+- [x] **Step 6: 확인** — 첫 틱 2026-10-04 22:17:41 KST, Observability 에 success 1 · error 0, 로그 `{"cron":"17 * * * *","ok":true,"status":200}`
 
 | 어디 | 무엇 |
 |---|---|
