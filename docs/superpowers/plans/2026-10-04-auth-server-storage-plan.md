@@ -31,6 +31,9 @@
 
 **옆길로 샌 것.** 처음에 CLI 가 기존 계정에 로그인돼 있어 그 계정 org 에 `onnit`(ref `llacbdnibhewmpsiaglk`)을 만들었다가 새 계정으로 다시 했다. 그 프로젝트는 스키마만 있고 비어 있다. 지울지는 사용자 결정. 리포의 `.env` 와 `supabase/.temp` 는 아직 그 옛 프로젝트를 가리킨다.
 
+**KOE205 함정.** Supabase 의 카카오 provider 는 기본 scope 에 `account_email` 을 넣는다. 비즈앱이 아니면 그 동의항목 권한이 없어
+카카오가 `잘못된 요청 (KOE205)` 로 막는다. `signInWithOAuth` 의 `options.scopes` 에 `profile_nickname profile_image` 만 적으면 된다.
+
 **브라우저 캐시 함정.** `css/base.css` 가 9월 8일 이후 안 바뀌어 Chrome 휴리스틱 캐시가 며칠간 옛 파일을 썼다. 로컬에서 CSS 가 안 바뀌어 보이면 `fetch('css/base.css',{cache:'reload'})` 뒤 새로고침.
 
 ## 파일 구조

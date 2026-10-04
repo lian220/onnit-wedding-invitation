@@ -925,7 +925,12 @@ a.mine-row:active{background:var(--bg)}
     // 복귀 주소는 지금 페이지(쿼리 · 해시 없이). 초안은 localStorage 에 있어 왕복을 넘긴다.
     return supa.auth.signInWithOAuth({
       provider: 'kakao',
-      options: { redirectTo: location.href.replace(/[?#].*$/, '') }
+      options: {
+        redirectTo: location.href.replace(/[?#].*$/, ''),
+        // Supabase 기본값은 account_email 까지 요청한다. 그 동의항목은 비즈앱만 받을 수 있어
+        // 카카오가 KOE205 로 거절한다. 우리가 받는 둘만 명시한다 (스펙 §6).
+        scopes: 'profile_nickname profile_image'
+      }
     });
   }
 
