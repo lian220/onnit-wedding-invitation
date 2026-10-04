@@ -25,9 +25,9 @@
 | 4 `invite.html` | ✅ | `?id=` · `#d=` · `?to=` 로컬 검증. 발행본 열람은 Task 6 로그인 뒤 |
 | 5 카카오 · Auth | ✅ | 카카오 앱 `ONNIT 청첩장`(ID 1597191). **개인 개발자 비즈 앱**으로 전환(아이콘 등록 → 전환 버튼, 본인인증·약관은 계정에 이미 돼 있어 즉시 완료). 동의항목 닉네임 필수 · 프로필 사진 선택 · **카카오계정(이메일) 선택** — 이게 없으면 KOE205. 새 콘솔 경로: Redirect URI 와 Client Secret 은 **[앱] > [플랫폼 키] > REST API 키 > 더보기 > 수정**. Supabase 는 Site URL · Redirect URLs · provider(사용자가 키 입력) · email optional ON |
 | 6 `make.html` | ✅ | 로그인 왕복 검증 완료: 저장 → 카카오 동의 → `?code=` 복귀(주소 정리됨) → 보류 저장 이어짐 → 짧은 주소 `?id=` → 미발행 시 하객에게 "아직 발행되지 않았거나 없는 청첩장" → 발행 → 하객 화면에 서버 데이터 렌더 → `&to=` 맞춤 링크 → 캐시 → 새로고침 후 상태 유지. 디자인은 리뷰 반영. **빠진 것: 목록에서 삭제 UI 없음** (RLS 정책은 있다) |
-| 7 운영 | ⬜ | **백업은 사용자 결정으로 뺐다 (2026-10-04).** 남는 것은 일시정지 방지 핑 하나 — UptimeRobot 무료 모니터가 `get_invitation` RPC 를 5분마다 부른다. 비공개 저장소 · pg_dump 는 하지 않는다 |
+| 7 운영 | 🔶 | **백업은 사용자 결정으로 뺐다 (2026-10-04).** 핑은 UptimeRobot 대신 **Cloudflare Worker 크론** `ops/keepalive` (계정이 하나 더 필요 없어서). 워커 작성 · `tsc` · 드라이런 · 로컬 크론 호출로 운영 Supabase 200 확인. 남은 것: 대시보드에서 Workers Builds 연결 (Step 5–6) |
 | 8 호스팅 | ✅ | Cloudflare Pages 프로젝트 `onnit-wedding`, 커스텀 도메인 `wedding.onnit.co.kr` 컷오버, GitHub Pages 끔, `CNAME`·`.nojekyll` 삭제. **함정 둘**: ① Cloudflare GitHub 앱이 "선택한 저장소만"이라 공개 저장소는 복제만 되고 push 이벤트가 안 와 자동 배포가 안 됐다 → GitHub 앱 설치 설정에서 저장소 추가. ② `404.html` 이 없으면 없는 경로에 index.html 을 200 으로 내준다 → `404.html` 추가 |
-| 9 문서 | ⬜ | |
+| 9 문서 | ✅ | README 저장 절 · 「남은 것」 · 「돌아올 자리」, 랜딩 메타 · 리드 · 카드 01/02 · 한계 둘, 스펙 세 줄(UMD · 핑 · `.html`) + §8-③ · §11 을 워커 크론으로 |
 
 **운영 검증 (2026-10-04 밤).** 하위 프로젝트 1 을 `main` 에 머지하고 push 했다. 운영에서 카카오 로그인 왕복과 저장 · 발행 · 열람이 로컬과 같이 동작한다. 테스트로 발행한 청첩장 두 건(`GenFS8zH` 로컬, `1f65LV1C` 운영)이 DB 에 남아 있다 — 삭제 UI 가 없어 Table Editor 에서 지운다.
 
@@ -1031,135 +1031,69 @@ git commit -m "feat(make): 카카오 로그인 · 서버 저장 · 발행 · 내
 
 ## Task 7: 운영 — 일시정지 방지 핑
 
-> **2026-10-04 사용자 결정: 백업은 하지 않는다.** 아래에서 `backup.yml` 과 비공개 저장소 부분은 건너뛴다. 핑은 UptimeRobot 하나로 충분하고, `keepalive.yml` 은 두고 싶으면 두는 선택지다.
+> **2026-10-04 사용자 결정: 백업은 하지 않는다.** 핑 하나만 남는다.
+> 처음 안(UptimeRobot)은 계정이 하나 더 필요해서, 이미 쓰는 Cloudflare 계정의 **Worker 크론**으로 바꿨다.
+> 공개 저장소의 GitHub Actions 는 60일 규칙 때문에 처음부터 제외 (스펙 §8-③).
 
 **Files:**
-- Create: `ops/README.md`, `ops/keepalive.yml`, `ops/backup.yml`
+- Create: `ops/keepalive/worker.ts`, `ops/keepalive/wrangler.jsonc`, `ops/keepalive/package.json`, `ops/keepalive/tsconfig.json`, `ops/keepalive/README.md`
+- Modify: `.gitignore` (`ops/keepalive/.wrangler/`, `ops/keepalive/dist/`)
 
-이 리포는 공개다. 워크플로는 **비공개 백업 저장소**에서 돈다 (스펙 §8-③ · ④). 여기엔 복사할 템플릿만 둔다.
+- [x] **Step 1: 워커 작성**
 
-- [ ] **Step 1: 템플릿 작성**
+`ops/keepalive/worker.ts` — `scheduled` 핸들러 하나. `get_invitation` RPC 를 `p_id: 'keepalive'` 로 POST 한다.
+결과는 `Result` 꼴(`{ ok: true, status } | { ok: false, error: 'HTTP' | 'NETWORK', detail }`)로 받고,
+실패면 `throw` 해서 대시보드 크론 기록에 에러로 남긴다. `fetch` 핸들러는 없다.
 
-`ops/README.md`:
+`ops/keepalive/wrangler.jsonc` — `name: onnit-keepalive`, `main: worker.ts`, `workers_dev: false`, `preview_urls: false`,
+`triggers.crons: ["17 * * * *"]`, `vars` 에 공개값 둘(`SUPABASE_URL`, `SUPABASE_ANON_KEY` — `js/config.js` 와 같다), `observability.enabled: true`.
 
-```markdown
-# 운영 템플릿 — 비공개 백업 저장소로 복사한다
+- [x] **Step 2: 로컬 검증 (로그인 불필요)**
 
-이 리포는 공개라 여기서 돌리지 않는다. 이유 둘:
+```bash
+cd ops/keepalive && npm install
+npm run check                      # wrangler types → worker-configuration.d.ts 생성, tsc --noEmit
+npx wrangler deploy --dry-run --outdir dist   # 설정·번들만 확인. 배포 안 함
+```
 
-- `pg_dump` 에 전화번호 · 계좌번호가 통째로 들어 있다. 공개 저장소의 아티팩트는 GitHub 계정만 있으면 누구나 받는다
-- 공개 저장소의 예약 워크플로는 60일 활동이 없으면 꺼진다. 비공개는 안 꺼진다
+- [x] **Step 3: 크론 핸들러를 실제로 한 번 돌려 본다**
 
-## 만들기
+```bash
+npx wrangler dev --test-scheduled    # 다른 터미널에서
+curl "http://localhost:8787/__scheduled?cron=17+*+*+*+*"
+```
 
-1. GitHub 에 **비공개** 저장소 `onnit-backup` 을 만든다
-2. `keepalive.yml` · `backup.yml` 을 그 저장소의 `.github/workflows/` 에 넣는다
-3. Settings → Secrets and variables → Actions 에 셋을 넣는다
+Expected: `Ran scheduled event`, dev 로그에 `{"cron":"17 * * * *","ok":true,"status":200}`.
+이 요청은 운영 Supabase 를 실제로 때린다 — 그게 목적이다.
 
-| Secret | 값 |
-|---|---|
-| `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
-| `SUPABASE_ANON_KEY` | anon 키 |
-| `SUPABASE_DB_URL` | 대시보드 → Connect → Session pooler 의 URI. `postgresql://postgres.<ref>:<DB 비밀번호>@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres` 꼴. **Direct 가 아니라 Session pooler** 다 — Actions 러너는 IPv6 가 안 된다 |
+- [ ] **Step 4: 커밋 · push**
 
-4. Actions 탭에서 둘 다 **Run workflow** 로 한 번 돌려 초록인지 본다
+- [ ] **Step 5: Cloudflare 대시보드에서 저장소 연결 (Workers Builds, 무료 — 월 3,000분)**
 
-## 외부 크론 (이중화 + 알림)
-
-<https://uptimerobot.com> 무료 → New Monitor:
+Workers & Pages → Create → Workers 탭 → **Import a repository** → `lian220/onnit-wedding-invitation`
+(GitHub 앱은 Task 8 때 이 저장소에 이미 접근 권한이 있다) →
 
 | 항목 | 값 |
 |---|---|
-| Type | HTTP(s) — Keyword 말고 그냥 HTTP |
-| URL | `https://<project-ref>.supabase.co/rest/v1/rpc/get_invitation?p_id=keepalive` |
-| Method | POST, Content-Type `application/json`, Body `{"p_id":"keepalive"}` |
-| Headers | `apikey: <anon 키>` |
-| Interval | 5분 (무료 최소). 하루 288번 — Supabase 가 "매일 몇 번의 DB 요청"을 활동으로 본다 |
-| Alert | 이메일 |
+| Project name | `onnit-keepalive` (wrangler.jsonc 의 `name` 과 같게) |
+| Production branch | `main` |
+| Root directory | `ops/keepalive` |
+| Build command | 비움 |
+| Deploy command | `npx wrangler deploy` (기본값) |
 
-RPC 는 Postgres 를 실제로 태우므로 활동으로 잡힌다. `/auth/v1/health` 는 DB 를 안 탈 수 있어 쓰지 않는다.
-```
+→ Deploy. 첫 빌드가 끝나면 Settings → Build → **Build watch paths** 에 include `ops/keepalive/*` 를 넣는다.
+안 넣으면 사이트 파일만 바뀐 push 에도 워커 빌드가 돈다. 해롭진 않고 분만 쓴다.
 
-`ops/keepalive.yml`:
+- [ ] **Step 6: 확인**
 
-```yaml
-name: supabase-keepalive
-on:
-  schedule:
-    - cron: '23 1,13 * * *'    # 매일 10:23 · 22:23 KST. 정각은 GitHub 이 밀린다
-  workflow_dispatch:
-jobs:
-  ping:
-    runs-on: ubuntu-latest
-    steps:
-      - name: RPC 한 번 — Postgres 를 실제로 태워야 활동으로 잡힌다
-        env:
-          URL: ${{ secrets.SUPABASE_URL }}
-          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          out=$(curl -fsS -X POST "$URL/rest/v1/rpc/get_invitation" \
-            -H "apikey: $KEY" -H "Content-Type: application/json" \
-            -d '{"p_id":"keepalive"}')
-          echo "rpc -> $out"
-          test "$out" = "null"
-```
-
-`ops/backup.yml`:
-
-```yaml
-name: supabase-backup
-on:
-  schedule:
-    - cron: '41 18 * * 0'      # 매주 월 03:41 KST
-  workflow_dispatch:
-permissions:
-  contents: write
-jobs:
-  dump:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      - name: 스키마 + 데이터 덤프 (Supabase 가 관리하는 스키마는 CLI 가 알아서 뺀다)
-        env:
-          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: |
-          mkdir -p dumps
-          d=$(date -u +%F)
-          supabase db dump --db-url "$DB_URL" -f "dumps/$d-schema.sql"
-          supabase db dump --db-url "$DB_URL" --data-only -f "dumps/$d-data.sql"
-          ls -la dumps | tail -n 4
-      - name: 커밋 — 이 커밋이 저장소 활동이기도 하다
-        run: |
-          git config user.name  "backup-bot"
-          git config user.email "backup-bot@users.noreply.github.com"
-          git add dumps
-          git commit -m "backup $(date -u +%F)" || echo "변화 없음"
-          git push
-```
-
-- [ ] **Step 2: 🧑 비공개 저장소 · Secrets · UptimeRobot**
-
-`ops/README.md` 의 「만들기」와 「외부 크론」을 그대로 한다.
-
-- [ ] **Step 3: 확인**
-
-| 어디 | 기대 |
+| 어디 | 무엇 |
 |---|---|
-| 비공개 저장소 Actions → supabase-keepalive → Run workflow | 초록. 로그에 `rpc -> null` |
-| 비공개 저장소 Actions → supabase-backup → Run workflow | 초록. `dumps/<날짜>-schema.sql` 에 `create table public.invitations` 가 있고 `<날짜>-data.sql` 에 `auth.users` 와 `public.invitations` 의 `INSERT` 또는 `COPY` 가 있다 |
-| UptimeRobot | 상태 **Up**, 응답 200 |
+| Worker → Settings → Triggers | Cron `17 * * * *` 이 보인다. 반영까지 최대 15분 |
+| Worker → Logs (Observability) | 매시 17분에 `{"cron":"17 * * * *","ok":true,"status":200}` |
+| Supabase → Logs → API | 같은 시각에 `POST /rest/v1/rpc/get_invitation` 200 |
 
-- [ ] **Step 4: 커밋**
-
-```bash
-git add ops/
-git commit -m "ops: 무료 플랜 운영 템플릿 — 비공개 저장소용 핑 · 주간 백업, UptimeRobot 설정"
-```
-
----
+**알림은 없다.** 워커가 실패해도 메일이 오지 않는다. Supabase 가 멈출 때 보내는 메일이 마지막 그물이다.
+붙이려면 스펙 §11 — UptimeRobot 모니터(설정값은 `ops/keepalive/README.md`) 또는 Email Routing + `send_email`.
 
 ## Task 8: 호스팅 — Cloudflare Pages 로
 
@@ -1242,7 +1176,7 @@ git commit -m "chore: 호스팅을 Cloudflare Pages 로 — GitHub Pages 전용 
 - Modify: `index.html` 7 · 10행 메타, 228~232행 리드, 436~440행 「주소가 깁니다」
 - Modify: `docs/superpowers/specs/2026-09-08-auth-server-storage-design.md` §3 · §8-③ · §9-1
 
-- [ ] **Step 1: README 저장 절**
+- [x] **Step 1: README 저장 절**
 
 90행 제목과 그 절을 교체:
 
@@ -1277,7 +1211,7 @@ anon 키로 전체를 덤프할 수 없다. 설계는 `docs/superpowers/specs/20
 청첩장 쪽에 `hashchange`를 걸어 직접 다시 읽게 했다.
 ```
 
-- [ ] **Step 2: README 남은 것**
+- [x] **Step 2: README 남은 것**
 
 287~296행 목록을 교체:
 
@@ -1293,7 +1227,7 @@ anon 키로 전체를 덤프할 수 없다. 설계는 `docs/superpowers/specs/20
 ~~짧은 주소~~ 는 됐다. 계정과 서버 저장이 생기면서 같이 풀렸다.
 ```
 
-- [ ] **Step 3: 랜딩 카피**
+- [x] **Step 3: 랜딩 카피**
 
 `index.html` 7행과 10행의 `content` 를 바꾼다 (같은 문장):
 
@@ -1327,7 +1261,7 @@ anon 키로 전체를 덤프할 수 없다. 설계는 `docs/superpowers/specs/20
         </div>
 ```
 
-- [ ] **Step 4: 스펙 세 줄**
+- [x] **Step 4: 스펙 세 줄**
 
 | 어디 | 지금 | 바꿀 것 |
 |---|---|---|
@@ -1335,7 +1269,7 @@ anon 키로 전체를 덤프할 수 없다. 설계는 `docs/superpowers/specs/20
 | §8-③ 표 | `` `/auth/v1/health` 핑 `` | `` `get_invitation` RPC 핑 — Postgres 를 실제로 태워야 활동으로 잡힌다 `` |
 | §9-1 | `` `make.html` 이 만드는 주소와 OG 태그는 `/invite` 로 바꾼다. `` | `` 페이지가 만드는 주소는 `.html` 을 유지한다. 로컬 `http.server` 에 그 리다이렉트가 없어서다. `` |
 
-- [ ] **Step 5: 확인**
+- [x] **Step 5: 확인**
 
 Run:
 ```bash
@@ -1345,7 +1279,7 @@ Expected: `0` 과 `0`
 
 브라우저로 `http://localhost:8080/` 을 열어 리드 문단과 「아직 못 하는 것」 첫 항목이 새 문장인지 본다.
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 git add README.md index.html docs/superpowers/specs/2026-09-08-auth-server-storage-design.md

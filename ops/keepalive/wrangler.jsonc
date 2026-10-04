@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "onnit-keepalive",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-01",
+
+  // HTTP 로는 안 받는다. 크론만 돈다.
+  "workers_dev": false,
+  "preview_urls": false,
+
+  // 매시 17분 (UTC 기준이지만 매시라 상관없다). 정각은 피한다.
+  "triggers": { "crons": ["17 * * * *"] },
+
+  // 공개값. js/config.js 와 같은 것이다.
+  "vars": {
+    "SUPABASE_URL": "https://ehzcybacnnhtyikrpsiy.supabase.co",
+    "SUPABASE_ANON_KEY": "sb_publishable_kEc93M1vv8SvlXmup3a3Ng_pnThAmK8"
+  },
+
+  "observability": { "enabled": true }
+}

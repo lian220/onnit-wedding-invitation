@@ -10,3 +10,8 @@ claudedocs/samples/
 # 비밀값. 공개값은 js/config.js
 .env
 supabase/.temp/
+
+# ops/keepalive (Cloudflare Worker) 작업물
+ops/keepalive/.wrangler/
+ops/keepalive/dist/
+ops/keepalive/worker-configuration.d.ts
