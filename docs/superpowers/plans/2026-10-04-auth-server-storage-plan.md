@@ -31,8 +31,12 @@
 
 **옆길로 샌 것.** 처음에 CLI 가 기존 계정에 로그인돼 있어 그 계정 org 에 `onnit`(ref `llacbdnibhewmpsiaglk`)을 만들었다가 새 계정으로 다시 했다. 그 프로젝트는 스키마만 있고 비어 있다. 지울지는 사용자 결정. 리포의 `.env` 와 `supabase/.temp` 는 아직 그 옛 프로젝트를 가리킨다.
 
-**KOE205 함정.** Supabase 의 카카오 provider 는 기본 scope 에 `account_email` 을 넣는다. 비즈앱이 아니면 그 동의항목 권한이 없어
-카카오가 `잘못된 요청 (KOE205)` 로 막는다. `signInWithOAuth` 의 `options.scopes` 에 `profile_nickname profile_image` 만 적으면 된다.
+**KOE205 함정.** Supabase 의 카카오 provider 는 기본 scope 에 `account_email` 을 넣는다. 비즈 앱이 아니면 그 동의항목이
+「권한 없음」이라 카카오가 `잘못된 요청 (KOE205)` 로 막는다. `options.scopes` 는 기본값에 **덧붙기만 하고 빼지 못한다**
+(실측: `scope=account_email profile_image profile_nickname profile_nickname profile_image`). 해법은 카카오 쪽이다 —
+**개인 개발자 비즈 앱 전환**(앱 아이콘 등록 → 본인인증 → 카카오비즈니스 통합 약관 동의) 뒤 동의항목에서 카카오계정(이메일)을
+**선택 동의**로 켠다. Supabase 의 「Allow users without an email」이 켜져 있어 사용자가 이메일을 거부해도 로그인은 된다.
+근거: [supabase/supabase#36878](https://github.com/supabase/supabase/issues/36878). 아이콘은 `img/app-icon-512.png`.
 
 **브라우저 캐시 함정.** `css/base.css` 가 9월 8일 이후 안 바뀌어 Chrome 휴리스틱 캐시가 며칠간 옛 파일을 썼다. 로컬에서 CSS 가 안 바뀌어 보이면 `fetch('css/base.css',{cache:'reload'})` 뒤 새로고침.
 
