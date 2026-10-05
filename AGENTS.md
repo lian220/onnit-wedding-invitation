@@ -27,7 +27,7 @@ cd ops/keepalive && npx wrangler deploy --dry-run --outdir dist
 
 - 사이트는 Cloudflare Pages다. `main`에 push하면 빌드 없이 그대로 운영(`wedding.onnit.co.kr`)에 나간다. main push는 곧 배포다.
 - `ops/keepalive/*`가 바뀐 push는 Workers Builds가 `wrangler deploy`를 돌린다.
-- 브랜치·PR 관례는 미확인. 지금까지 커밋은 main에 바로 들어갔다. 운영에 닿는 변경은 브랜치에서 작업하고 push 전에 사용자에게 확인한다.
+- 지금까지 커밋은 main에 바로 들어갔다. main push가 곧 운영 배포이므로 브랜치·PR 규칙(전역)을 특히 지킨다.
 
 ## 지켜야 할 것
 
