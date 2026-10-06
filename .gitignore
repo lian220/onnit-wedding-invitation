@@ -15,3 +15,7 @@ supabase/.temp/
 ops/keepalive/.wrangler/
 ops/keepalive/dist/
 ops/keepalive/worker-configuration.d.ts
+
+# 로컬 결제 연동 검증 비밀과 구매번호
+.env.billing-test
+.billing-test-state.json
