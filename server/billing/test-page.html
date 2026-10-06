@@ -1,15 +1,15 @@
 <!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>{{label}} 결제 연동 테스트</title>
 <style>body{font:16px/1.7 system-ui;background:#f3f5f8;color:#182331;margin:0;padding:6vh 20px}main{max-width:580px;margin:auto;background:white;border-radius:20px;padding:32px}h1{font-size:28px}button,a{font:inherit;padding:12px 18px;border-radius:10px;border:0;background:#2059bb;color:white;margin:8px 8px 8px 0;cursor:pointer}a{display:inline-block;text-decoration:none}button:disabled{opacity:.5}#status{padding:20px;background:#f3f5f8;white-space:pre-wrap;overflow-wrap:anywhere}small{color:#647080}</style>
-<main><small>PortOne · KCP 테스트 환경</small><h1>{{label}} 결제 연동 확인</h1><p>테스트 금액 3,000원. 상품 구매·발행·이용권 변경은 발생하지 않습니다.</p><button id="checkout">결제창 준비</button><button id="verify">결제 상태 확인</button><div id="link"></div><p id="status" role="status">결제창을 준비한 뒤 열어 주세요.</p><small>결제창에서 승인한 뒤 돌아와 상태를 확인하세요. 성공 화면만으로 결제 완료로 판정하지 않습니다.</small></main>
+<main><small>PortOne · KCP 테스트 환경</small><h1>{{label}} 결제 연동 확인</h1><p>테스트 금액 3,000원. 상품 구매·발행·이용권 변경은 발생하지 않습니다.</p><button id="checkout">결제창 준비·갱신</button><button id="verify">결제 상태 확인</button><div id="link"></div><p id="status" role="status">결제창을 준비한 뒤 열어 주세요.</p><small>결제창에서 승인한 뒤 돌아와 상태를 확인하세요. 성공 화면만으로 결제 완료로 판정하지 않습니다.</small></main>
 <script>
 const status=document.querySelector('#status');
 async function run(path){
  document.querySelectorAll('button').forEach(b=>b.disabled=true);
  try{
   const r=await fetch(path,{method:'POST'});const data=await r.json();
-  if(data.checkoutUrl){const a=document.createElement('a');a.href=data.checkoutUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='테스트 결제창 열기';document.querySelector('#link').replaceChildren(a);}
+  document.querySelector('#link').replaceChildren();
+  if(['pending','failed'].includes(data.status)&&data.checkoutUrl){const a=document.createElement('a');a.href=data.checkoutUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent=data.status==='failed'?'같은 주문으로 결제 다시 시도':'테스트 결제창 열기';document.querySelector('#link').replaceChildren(a);}
   const labels={paid:'결제 승인 확인 완료',pending:'결제 대기',failed:'결제 실패',not_started:'아직 주문을 만들지 않았습니다',refunded:'전액 취소 확인',partial_refund:'부분 취소 확인',pending_reconciliation:'결제 대기 또는 처리 중입니다. 잠시 후 같은 주문을 확인하세요.'};
-  if(data.status!=='pending')document.querySelector('#link').replaceChildren();
   const failure=data.status==='failed'&&data.failure?'\n'+data.failure.message+(data.failure.provider?.code?'\n오류 코드: '+data.failure.provider.code:''):'';
   status.textContent=(labels[data.error||data.status]||'확인 실패. 새 주문을 만들지 말고 다시 확인하세요.')+failure+(data.id?'\n주문번호: '+data.id:'');
  }catch{status.textContent='연결 실패. 같은 주문으로 다시 확인하세요.';}

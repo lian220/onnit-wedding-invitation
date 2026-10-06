@@ -27,3 +27,9 @@
 | server/billing/README.md | 실패 상태와 검증 경계 계약 갱신 | 문서/코드 대조 | 제품 전체 문서 재검토 제외 |
 
 `node --test server/billing/*.test.mjs`: 8개 통과, 실패 0. client·HTTP·화면 실패 재현 테스트를 먼저 추가하고 실패를 확인한 뒤 구현했다. 실제 카드 승인·원격 배포·공통 서버 재시작은 수행하지 않았다.
+
+### 동일 주문 재시도·URL 갱신 보완
+
+실패 주문의 선택적 checkout URL도 공통 서버 origin·정해진 경로로 제한한다. 결제창 준비·갱신 POST만 같은 구매·멱등 키로 요청하며, GET 화면 방문과 상태 확인은 새 URL을 발급하지 않는다. 실패 안내를 유지한 재시도 링크는 pending/failed에만 표시하고 승인·환불 상태에서는 제거한다. 원격 동작·실제 URL 갱신·카드 승인은 미실행이며 공통 API의 응답 fixture로 제품 계약을 검증했다.
+
+각 제품 `node --test server/billing/*.test.mjs`: 10개 통과, 실패 0. client URL 검증, HTTP 실패 재시도 링크, DOM 링크 유지의 RED를 확인한 뒤 수정했다. 기존 서버 재시작·원격 배포·커밋 없음.

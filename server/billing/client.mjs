@@ -37,7 +37,7 @@ export function createBillingClient({ baseUrl, apiKey, serviceId, priceId, fetch
           o.price?.currency !== 'KRW' || o.price?.amount_unit !== 'krw' || !Number.isSafeInteger(o.price?.amount) || o.price.amount <= 0 ||
           (o.status === 'paid' && o.total !== o.price.amount) ||
           (o.status === 'failed' ? !validFailure(o.failure) : o.failure != null)) return { ok: false, error: 'order_mismatch' };
-      if (o.status === 'pending') {
+      if (o.status === 'pending' || (o.status === 'failed' && o.checkout_url)) {
         const checkout = new URL(o.checkout_url);
         if (checkout.origin !== base.origin || checkout.pathname !== '/checkout/portone' || checkout.username || checkout.password) return { ok: false, error: 'invalid_checkout_url' };
       }

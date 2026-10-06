@@ -67,3 +67,22 @@ test('확인된 결제 실패는 정상 주문으로 반환하되 실패 계약�
  const stale=createBillingClient({...config,fetchImpl:async()=>Response.json({...order,status:'paid',total:3000,failure})});
  assert.deepEqual(await stale.reconcile('ord_test',purchase),{ok:false,error:'order_mismatch'});
 });
+
+test('실패 주문의 재시도 URL도 검증하고 같은 구매 키로 결제창을 갱신한다',async()=>{
+ const failure={code:'payment_failed',provider:{name:'portone',transaction_id:'tx-test-2',failed_at:'2026-10-06T12:00:00Z'}};
+ const failed={...order,status:'failed',failure};
+ for(const checkout_url of ['https://evil.example/checkout/portone','javascript:alert(1)','https://billing.example/other']) {
+  const client=createBillingClient({...config,fetchImpl:async()=>Response.json({...failed,checkout_url})});
+  assert.deepEqual(await client.checkout(purchase),{ok:false,error:'invalid_checkout_url'});
+ }
+ const calls=[];
+ const client=createBillingClient({...config,fetchImpl:async(url,init)=>{calls.push({url,init});return Response.json({...failed,checkout_url:order.checkout_url+'&refresh='+calls.length});}});
+ const first=await client.checkout(purchase),second=await client.checkout(purchase);
+ assert.equal(first.ok,true);assert.equal(second.ok,true);
+ assert.notEqual(first.order.checkout_url,second.order.checkout_url);
+ assert.equal(first.order.id,second.order.id);
+ assert.equal(calls[0].init.headers['Idempotency-Key'],calls[1].init.headers['Idempotency-Key']);
+ assert.equal(calls[0].init.body,calls[1].init.body);
+ const noLink=createBillingClient({...config,fetchImpl:async()=>Response.json({...failed,checkout_url:undefined})});
+ assert.equal((await noLink.reconcile('ord_test',purchase)).ok,true);
+});

@@ -30,17 +30,36 @@ test('테스트 화면은 실패 사유와 코드를 텍스트로 표시하고 �
  const {readFile}=await import('node:fs/promises');
  const {runInNewContext}=await import('node:vm');
  const page=await readFile(new URL('./test-page.html',import.meta.url),'utf8');
- const nodes=Object.fromEntries(['#status','#link','#checkout','#verify'].map(id=>[id,{textContent:'',disabled:false,replaceChildren(){}}]));
+ const nodes=Object.fromEntries(['#status','#link','#checkout','#verify'].map(id=>[id,{textContent:'',disabled:false,replaceChildren(...children){this.children=children;}}]));
  const document={querySelector:id=>nodes[id],querySelectorAll:()=>[nodes['#checkout'],nodes['#verify']],createElement:()=>({})};
- let response={id:'ord_test',status:'failed',failure:{code:'authentication_failed',message:'카드 인증값 검증에 실패했습니다.',provider:{code:'CC26'}}};
+ let response={id:'ord_test',status:'failed',checkoutUrl:'https://billing.example/checkout/portone?token=test',failure:{code:'authentication_failed',message:'카드 인증값 검증에 실패했습니다.',provider:{code:'CC26'}}};
  const context={document,fetch:async()=>({json:async()=>response})};
  runInNewContext(page.match(/<script>([\s\S]*?)<\/script>/)[1],context);
  await nodes['#verify'].onclick();
  assert.match(nodes['#status'].textContent,/결제 실패/);
  assert.match(nodes['#status'].textContent,/카드 인증값/);
  assert.match(nodes['#status'].textContent,/CC26/);
+ assert.equal(nodes['#link'].children.length,1);
+ assert.equal(nodes['#link'].children[0].textContent,'같은 주문으로 결제 다시 시도');
  response={id:'ord_test',status:'paid'};
  await nodes['#verify'].onclick();
  assert.match(nodes['#status'].textContent,/결제 승인 확인 완료/);
  assert.doesNotMatch(nodes['#status'].textContent,/CC26|결제 실패/);
+ assert.equal(nodes['#link'].children.length,0);
+});
+
+test('결제창 POST만 실패 재시도 링크를 제공하고 GET·상태조회·승인·환불은 제공하지 않는다',async(t)=>{
+ let state='failed',calls=0;
+ const order=()=>({id:'ord_test',status:state,price:{amount:3000,currency:'KRW'},checkout_url:'https://billing.example/checkout/portone?token=test',failure:state==='failed'?{code:'payment_failed'}:undefined});
+ const server=createTestServer({client:{checkout:async()=>{calls++;return {ok:true,order:order()};},reconcile:async()=>({ok:true,order:order()})},purchase:{orderId:'ord_test'},persist:async()=>{},label:'결제 테스트'});
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ t.after(()=>new Promise(resolve=>server.close(resolve)));
+ const base=`http://127.0.0.1:${server.address().port}`;
+ assert.equal((await fetch(base+'/')).status,200);
+ assert.equal((await fetch(base+'/checkout')).status,404);
+ assert.equal(calls,0);
+ const call=path=>fetch(base+path,{method:'POST',headers:{Origin:base}}).then(r=>r.json());
+ assert.equal((await call('/checkout')).checkoutUrl,order().checkout_url);
+ assert.equal((await call('/status')).checkoutUrl,undefined);
+ for(state of ['paid','partial_refund','refunded'])assert.equal((await call('/checkout')).checkoutUrl,undefined);
 });

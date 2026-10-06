@@ -13,7 +13,7 @@ node --test server/billing/*.test.mjs
 
 환경 변수: `BILLING_BASE_URL`, `BILLING_API_KEY`, `BILLING_SERVICE_ID`, `BILLING_PRICE_ID`, `BILLING_TEST_PORT`, `BILLING_TEST_STATE_FILE`. 키는 서버 전용이며 공개 환경변수·정적 파일에 넣지 않는다. `.env.billing-test`와 `.billing-test-state.json`은 Git에서 제외하고 권한 0600으로 보관한다.
 
-상태 파일은 `{customerRef, externalOrderId, idempotencyKey, orderId?}`이며 개인정보 대신 불투명 테스트 식별자만 둔다. 구매번호와 멱등 키를 네트워크 호출 전에 저장한다. 실행 중 파일을 바꾸지 않는다. 같은 구매 재시도는 같은 키·본문으로 한다. 오래된 결제창은 1시간 만료하며 자동으로 새 구매를 만들지 않는다.
+상태 파일은 `{customerRef, externalOrderId, idempotencyKey, orderId?}`이며 개인정보 대신 불투명 테스트 식별자만 둔다. 구매번호와 멱등 키를 네트워크 호출 전에 저장한다. 실행 중 파일을 바꾸지 않는다. 같은 구매 재시도는 같은 키·본문으로 한다. 결제창은 1시간 만료한다. 만료·실패 후에는 결제창 준비·갱신을 눌러 같은 구매번호·멱등 키의 POST로 다시 요청한다. 공통 서버가 기존 주문의 재시도 가능 여부를 확인해 URL을 갱신하며 새 구매를 자동 생성하지 않는다. GET 화면 열기와 상태 조회는 URL을 발급하지 않는다. 실패 주문은 실패 안내를 유지한 채 검증된 재시도 링크를 제공하고, 승인·환불 주문에는 링크를 제공하지 않는다.
 
 ## 계약
 
