@@ -30,6 +30,7 @@ export function createTestServer({client,purchase,persist,label}) {
    purchase.orderId=o.id;
    await persist(purchase);
    return reply(200,{id:o.id,status:o.status,amount:o.price.amount,currency:o.price.currency,
+    ...(o.status==='failed'?{failure:o.failure}:{}),
     ...(req.url==='/checkout'&&o.status==='pending'?{checkoutUrl:o.checkout_url}:{})});
   } catch {return reply(503,{error:'verification_unavailable'});}
   finally {busy=false;}

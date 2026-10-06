@@ -48,3 +48,22 @@ test('비밀 전송 주소와 반환 결제창 주소를 제한한다', async ()
   assert.equal((await c.checkout(purchase)).ok,false);
  }
 });
+
+test('확인된 결제 실패는 정상 주문으로 반환하되 실패 계약을 검증한다', async () => {
+ const failure={code:'authentication_failed',message:'카드 인증값 검증에 실패했습니다. 카드사 인증을 다시 진행해 주세요.',provider:{name:'portone',code:'CC26',transaction_id:'tx-test-1',failed_at:'2026-10-06T12:00:00Z'}};
+ const failed={...order,status:'failed',failure};
+ const client=createBillingClient({...config,fetchImpl:async()=>Response.json(failed)});
+ const result=await client.reconcile('ord_test',purchase);
+ assert.equal(result.ok,true);
+ assert.deepEqual(result.order.failure,failure);
+ const unsafe=createBillingClient({...config,fetchImpl:async()=>Response.json({...failed,failure:{...failure,message:'<script>private upstream</script>',raw:'secret',provider:{...failure.provider,raw:'secret'}}})});
+ const normalized=await unsafe.reconcile('ord_test',purchase);
+ assert.deepEqual(normalized.order.failure,failure);
+ assert.equal(JSON.stringify(normalized).includes('secret'),false);
+ for(const bad of [undefined,{...failure,code:'unknown'},{...failure,provider:{...failure.provider,name:'other'}},{...failure,provider:{...failure.provider,transaction_id:''}},{...failure,provider:{...failure.provider,failed_at:'invalid'}},{...failure,provider:{...failure.provider,code:'<secret>'}}]) {
+  const c=createBillingClient({...config,fetchImpl:async()=>Response.json({...failed,failure:bad})});
+  assert.deepEqual(await c.reconcile('ord_test',purchase),{ok:false,error:'order_mismatch'});
+ }
+ const stale=createBillingClient({...config,fetchImpl:async()=>Response.json({...order,status:'paid',total:3000,failure})});
+ assert.deepEqual(await stale.reconcile('ord_test',purchase),{ok:false,error:'order_mismatch'});
+});

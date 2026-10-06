@@ -8,8 +8,10 @@ async function run(path){
  try{
   const r=await fetch(path,{method:'POST'});const data=await r.json();
   if(data.checkoutUrl){const a=document.createElement('a');a.href=data.checkoutUrl;a.target='_blank';a.rel='noopener noreferrer';a.textContent='테스트 결제창 열기';document.querySelector('#link').replaceChildren(a);}
-  const labels={paid:'결제 승인 확인 완료',pending:'결제 대기',not_started:'아직 주문을 만들지 않았습니다',refunded:'전액 취소 확인',partial_refund:'부분 취소 확인',pending_reconciliation:'결제 대기 또는 처리 중입니다. 잠시 후 같은 주문을 확인하세요.'};
-  status.textContent=(labels[data.error||data.status]||'확인 실패. 새 주문을 만들지 말고 다시 확인하세요.')+(data.id?'\n주문번호: '+data.id:'');
+  const labels={paid:'결제 승인 확인 완료',pending:'결제 대기',failed:'결제 실패',not_started:'아직 주문을 만들지 않았습니다',refunded:'전액 취소 확인',partial_refund:'부분 취소 확인',pending_reconciliation:'결제 대기 또는 처리 중입니다. 잠시 후 같은 주문을 확인하세요.'};
+  if(data.status!=='pending')document.querySelector('#link').replaceChildren();
+  const failure=data.status==='failed'&&data.failure?'\n'+data.failure.message+(data.failure.provider?.code?'\n오류 코드: '+data.failure.provider.code:''):'';
+  status.textContent=(labels[data.error||data.status]||'확인 실패. 새 주문을 만들지 말고 다시 확인하세요.')+failure+(data.id?'\n주문번호: '+data.id:'');
  }catch{status.textContent='연결 실패. 같은 주문으로 다시 확인하세요.';}
  finally{document.querySelectorAll('button').forEach(b=>b.disabled=false);}
 }
